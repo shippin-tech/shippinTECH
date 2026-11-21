@@ -1,9 +1,23 @@
 ---
-description: Business Source License chosen. Rocks stays a supported store. Enterprise stays in the build.
+description: PostgreSQL first, FoundationDB at scale, all capabilities retained. Follow ROADMAP.md.
 alwaysApply: true
 ---
 
 # License and scale
+
+## Current authority — 2026-11-21
+
+[ROADMAP.md](../../ROADMAP.md) controls implementation. New installs start with
+PostgreSQL. FoundationDB is the scale option behind the same application boundary;
+RocksDB and other existing supported stores remain available. Include the same
+capabilities in both profiles. Reuse and finish the shippinTECH feature ports;
+do not disable Enterprise features to avoid completing them. Source decisions
+belong in roadmap/independence.md; a rename is not authorship evidence.
+
+The sections below describe historical build choices only. Their Rocks-first
+default and exclusion of composite stores do not override the full capability floor.
+
+## Historical context
 
 ## License is BUSL-1.1
 

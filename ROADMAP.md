@@ -1,151 +1,300 @@
-# Roadmap to alpha
+# shippinTECH alpha execution plan
 
-One document for sequencing. It replaces the status columns in `PLAN.md`, `ui/porting/work-packages.json`
-and the plan modules, which disagree with each other (the work-packages file shows 13 packages
-queued while `RELEASE.md` shows most of the same work done). What is true of each capability lives in
-one place: [roadmap/capabilities.csv](roadmap/capabilities.csv), built by
-`roadmap/build_capabilities.py`. A row changes status only together with the test that earns it.
+Owner direction, 2026-11-21. **This is the single execution order.** It supersedes
+older sequencing in `PLAN.md`, porting work packages, dated plans and Cursor rules.
+[REGRESSION.md](REGRESSION.md) defines acceptance; [RELEASE.md](RELEASE.md) controls
+tags. This is pre-release engineering on disposable installs.
 
-`RELEASE.md` stays the gate for a `v*` tag. `REGRESSION.md` stays the acceptance rule. This file is the order
-of work between them. Pre-release: nothing here is supported for real mail.
+## 1. The result being built
 
-## 1. Where we stand (measured 2026-11-20)
+One shippinTECH product: the existing Svelte UI and style tokens drive owned Rust
+application services through `/api/v1`. PostgreSQL is the initial database.
+FoundationDB remains the scale option behind the same application/storage boundary.
+Other existing storage capabilities remain available. The choice of database must
+not change which mail, admin, security or collaboration features are available.
 
-Owner direction on 2026-11-20: the finished product is fully authored shippinTECH,
-with one product API and no permanent upstream compatibility layer. The complete
-boundary, separation gates and subsequent services for shippin.ai are specified in
-[shippinTECH foundation](roadmap/shippintech-foundation.md). An alpha that still uses
-inherited code is an interim milestone and does not satisfy the independence goal.
+All existing capabilities remain in scope, including capabilities previously sold
+as Enterprise. There is no permanent upstream private API, compatibility shim or
+old UI requirement. Fresh pre-release installs are allowed; preserving upstream
+private API shapes and historical data layouts is not an acceptance requirement.
+Standard SMTP, IMAP, POP3, JMAP, DAV, ManageSieve, OAuth and SCIM interoperability is
+part of the product. New shippinTECH data still needs durability, backup and recovery.
+PostgreSQL-to-FoundationDB transfer is a product scaling capability, not upstream
+compatibility work.
 
-| | |
-|---|---|
-| Product surface | Svelte UI, 54k lines, all the owner's. One API prefix `/api/v1`, registry facade over JMAP, generated ArkType contracts, stale-write guard. No legacy management API. |
-| Engine | 376k lines of Rust in 28 crates, about 96% inherited and untouched ([PROVENANCE.md](PROVENANCE.md)). Largest: `registry` 87k (82k of it in `schema/`, machine-generated with no generator in this tree), `common` 44k, `jmap` 33k, `store` 24k, `smtp` 20k. |
-| Capabilities | 46 tracked: **30 verified**, 5 engine-suite-only, 4 unverified, 5 gap, 2 mocked-only. |
-| What CI proves | Lint, typecheck, unit tests, mocked browser tests, `cargo check`. |
-| What CI does not prove | Every live browser test, every `deploy/local/verify_*.py`, and the **120k-line inherited engine suite (`tests/`)**. All of them run by hand. That is why no regression claim can be made for the engine today. |
-| Separation from the upstream | The product surface is separate. The engine is not: 12 upstream-authored packages are dependencies and 96% of the workspace is inherited. Section 5 says how that ends. |
+Reuse the Svelte and shippinTECH Rust implementations already written. Port the
+missing behavior and reconnect callers; do not restart those features from zero.
+Do not reduce capabilities by compiling out Enterprise, substitute successful
+stubs, or count renaming as a completed port. Permitted third-party libraries can
+remain dependencies with their notices; ownership of the product does not require
+rewriting every library authored by someone who also worked upstream.
 
-## 2. What alpha means
+```mermaid
+flowchart TD
+  UI[Svelte screens and existing style tokens] --> API[shippinTECH API /api/v1]
+  Agent[shippin.ai and approved MCP actions] --> API
+  API --> Rust[Rust application operations and authorization]
+  Protocols[Mail and groupware protocol adapters] --> Rust
+  Rust --> Store[Shared persistence and durable jobs]
+  Store --> PG[PostgreSQL: initial install]
+  Store --> FDB[FoundationDB: scale profile]
+  Store --> Other[Existing blob, search, cache and coordinator options]
+  Rust --> Services[Service adapters: campaigns and future services]
+```
 
-A tagged build where every line below is true and has a command that shows it. Nothing is waived by being
-hard.
+## 2. Verified starting point
 
-| Id | Criterion | Shown by |
-|---|---|---|
-| X1 | Every capability row is `verified`, or is a `gap` the owner has waived in section 7 with a reason | `roadmap/capabilities.csv` |
-| X2 | The inherited engine suite runs on every push to `main`. Every failure is fixed or listed in `roadmap/known-failures.md` with its cause. None unexplained | CI job `engine tests` |
-| X3 | One command runs every gate in `REGRESSION.md` against a named image and records commit, image and results | `python scripts/regression.py` |
-| X4 | The UI is dumb: no component calls the network; every network call goes through the typed client; nothing is served outside `/api/v1`, JMAP and the standard protocols | `node scripts/check-dumb-ui.mjs` |
-| X5 | Performance baseline recorded for the capability set, with thresholds; the candidate is inside them | `roadmap/perf/` |
-| X6 | Clean Linux host: install, upgrade, backup and restore drill, TLS certificate | `RELEASE.md` A10, B3, B5, B6 |
-| X7 | `RELEASE.md` rows A and B Done; C and D Done or Waived by the owner | `RELEASE.md` |
-| X8 | Independence stage 1 closed: the per-dependency decision table is written (section 5) and the oracle for the first replacement slice passes against the current implementation | `roadmap/independence.md` |
+This table records observations from this session, not a claim of alpha completion.
 
-Alpha does **not** wait for the engine to be rewritten. A rewrite gates nothing until it passes the oracle,
-and 376k lines cannot be one step. Independence proceeds slice by slice from the first week of this plan
-and each slice ships on its own (section 5). This is the one structural call in this document; section 7
-lists it so it can be overruled in one line.
+| Item | Observed state |
+| --- | --- |
+| Main | Local and remote `main` both at `a99915375d94081b17484ce4a652b0e04dff9194` before this planning change. |
+| Other remote branch | `cursor/production-deploy-parity-c403` at `b09dbc3` is **8 commits behind main, 0 unique commits** (`git rev-list --left-right --count`). Its commits are already in main; no merge is required. No branch was deleted. |
+| Pending work | Five tracked UI files plus new `ui/test/team-api.test.ts` and its plan record. This work is not committed or deployed. No Rust/storage edits are pending from this session. |
+| UI checks | `npm test`: **41 files, 289 tests passed** after the People/API boundary changes. Svelte check passed with 0 errors/warnings before the final boundary guard; rerun it in A0. |
+| Main CI | [Check for a999153](https://github.com/shippin-tech/shippinTECH/actions/runs/44843695571) passed. That does not verify the uncommitted candidate. |
+| API | Actions, account security and bootstrap use `/api/v1/registry` on main. Pending People/teams work moves its consumer too and rejects private JMAP fallback. `crates/http/src/api/registry_rest.rs` still constructs private JMAP requests internally. |
+| Existing own Rust | `crates/common/src/shippin/` contains AI, branding, calendar templates, Google, keys, masks, organisations, provisioning, recovery, resources, split delivery, SSO, statistics and trace history. Own alert paths also exist in `crates/http/src/shippin/alerts.rs` and `crates/services/src/alerts.rs`. |
+| Remaining EE plumbing | `enterprise/license.rs` always refuses validation/renewal. `enterprise/config.rs`, account-creation checks and the scheduler still consume it. Some old paths can therefore be unavailable; the exact affected feature callers need the A2 mapping. |
+| Storage | PostgreSQL and FoundationDB backends exist. Cargo defaults are `rocks,enterprise`; `Dockerfile.fdb` builds `scale,enterprise` without PostgreSQL. Local Compose requires FoundationDB. PostgreSQL-first is not implemented. |
+| Live verification | Current candidate has not passed live browser/contract, protocol or storage parity. The temporary parity containers are stopped. Historical ledger results are not current-image results. |
+| Source accounting | `PROVENANCE.md` compares a squashed baseline. Its roughly 96% Rust classification is **not proof of upstream authorship or a reliable estimate of remaining rewrite work**. Preserve already rewritten work while resolving actual origins. |
 
-## 3. Track R: the regression machine
+## 3. Execution order and completion gates
 
-Everything else is safe only once this exists. Do first.
+Work on `main`, with bounded commits and their evidence. No PRs, release tags or
+unrelated refactors. Each package ends with a reviewable result and an updated
+capability report. Do not move an unverified row to Done.
 
-| Id | Task | Done when |
-|---|---|---|
-| R1 | **Run the inherited engine suite** in a Linux container against `HEAD` and record the real baseline: how many pass, fail, are ignored, and why | `roadmap/engine-suite-baseline.md` with counts per area (smtp, imap, jmap, webdav, scim, store, system, directory, automation, cluster, telemetry, utils) |
-| R2 | Put it in CI as job `engine tests` (rocks and sqlite, Linux). Failures that are environmental get an owner and a fix; real ones are bugs | Job green or every red listed in `known-failures.md` |
-| R3 | `scripts/regression.py`: runs REGRESSION.md gate 1 (the CI steps), gate 2 (build the image, bring up `deploy/local`, run `verify*.py`, `test:live`, `test:contract-live`, the engine suite), and writes `roadmap/regression-results.json` and `REGRESSION-RESULTS.md` with commit, image digest, per-gate result and what was not run | One command, one report. A gate that could not run says so; it is never green |
-| R4 | Fix whatever R1 and R3 find that is ours (stale tests, flaky live specs such as the Domains cold start) | Two consecutive full runs with identical results |
-| R5 | Performance fixture: delivery rate, JMAP list and search latency, IMAP fetch, memory at idle and under load, on synthetic data; thresholds written down | `roadmap/perf/baseline.json` and a script that compares a candidate to it |
-| R6 | `scripts/check-dumb-ui.mjs` in CI: no `.svelte` file calls `fetch`; `fetch` appears only in `src/lib/adapter`, `src/lib/contract`, and an allow-list that shrinks to nothing. Today 12 modules under `src/lib/shippin/` call it directly | Check green with an empty allow-list; those 12 use the typed client |
+### A0 — Finish and commit the pending Svelte API consumer
 
-## 4. Track L: close the capability gaps
+**Files:** `ui/src/lib/shippin/people/team.ts`, `ui/src/lib/contract/registry.ts`,
+`ui/src/lib/adapter/{registry-facade,jmap,action-call,bootstrap-call}.ts`, associated
+`ui/test/`, `ui/test-live/`, `ui/scripts/prove-portal-{actions,bootstrap}.ts`.
 
-Each row is in the ledger. Order is by how much alpha depends on it.
+1. Review the pending diff: paged people/domain reads, id-only account creation,
+   group membership, deletion, stale-write errors and credential field patches.
+2. Remove obsolete private-call builders and update their proof scripts. Keep
+   standard protocol adapters. Unknown admin objects must fail without fallback.
+3. Run the full web gate, not just the new tests. Commit the validated pending API
+   work separately from this plan. Its live verification stays open until A1.
 
-| Id | Ledger | Task | Done when |
-|---|---|---|---|
-| L1 | M5, M6, I9 | Independent-client suite for IMAP, POP3 and XOAUTH2 (flags, search, move, IDLE, retrieve and delete) against the live stack | Added to `verify_compat.py` or a sibling; rows `verified` |
-| L2 | C4, C7 | An independent DAV client check (CalDAV, CardDAV, WebDAV) and ManageSieve script upload, activation and effect on delivery | Rows `verified` |
-| L3 | C7 | Svelte Sievepad: edit, validate, activate scripts through JMAP, with the server's error positions shown | Browser test: a script that files a message into a folder, proven by delivery |
-| L4 | M9 | Live webmail search: text, sender, date, folder, flags | Live browser test |
-| L5 | G2 | Microsoft 365 connection on the server, matching the Google one: consent, expiry, cancel, disconnect, isolation, byte-exact copy, against a stand-in Microsoft server | Live spec like `google.spec.ts`. Real consent stays the owner's (gate 4) |
-| L6 | I6, U2 | Create and read round trips on the 37 empty registry objects; nested patch paths (read RFC 8620 5.3 first); typed editors for the largest objects | `verify_registry.py` covers every object; editors tested |
-| L7 | I5 | Seed an organisation-admin account; `verify_v1.py` covers the `org` role | Check added |
-| L8 | O6 | TLS certificate by ACME at install (RELEASE A10) | Certificate on a public host |
-| L9 | O8 | Monitoring and an alert channel (RELEASE D3) | Down host raises an alert outside itself |
-| L10 | M3, M4 | Queue retry and failure-report check and a sender-authentication check that do not need the public internet (local resolver, test domain) | Rows `verified` without waiting for RELEASE B1 and B4 |
-| L12 | O10 | Engine behaviour when the store stalls: bounded wait, a clear error to the client, health check turns unhealthy, recovery without a restart. Seen on 2026-11-20 (full disk, FoundationDB throttled, engine silent for 14 hours) | A test that stalls the store and sees errors and recovery |
-| L11 | U1 | Keyboard-only and mobile-width assertions on the main flows | Added to the live specs |
+**Done:** all applicable web checks pass; active Svelte admin operations use the
+owned API; no private transport fallback; commit ID and remaining live checks recorded.
 
-Platform port (`ui/porting` C1 to C4, the Go control plane) and Docs/Drive beyond v1 scope are **after
-alpha**, as `RELEASE.md` already scopes them. They are not lost: they stay in `ui/porting/work-packages.json`.
+### A1 — Make PostgreSQL the actual runnable baseline
 
-## 5. Track S: independence from the upstream
+**Files:** `crates/main/Cargo.toml`, `Dockerfile`, `Dockerfile.fdb`,
+`deploy/local/{compose.yaml,start.ps1,bootstrap.py,refresh.ps1,README.md}`,
+`install.sh`, `deploy/{compose.yaml,server.env.example,README.md}`;
+existing `crates/store/src/{build,registry,backend/postgres}` and
+`crates/common/src/manager/{boot,defaults}.rs` only where boot wiring requires it.
 
-**Rule.** A component is replaced only when the replacement passes the same oracle as the original and the
-original is still there until it does (REGRESSION.md). Both implementations build behind a feature during the
-overlap, the original is removed in its own commit afterwards, and data stays readable.
+1. Add PostgreSQL to the common shipped build; retain FoundationDB and existing
+   optional stores. Set PostgreSQL as the new-install default with explicit scale
+   selection. Do not create a second engine or a different feature edition.
+2. Generate a valid PostgreSQL store configuration at install time, resolve secrets
+   through existing mechanisms, and use the existing first-run administrator flow.
+   Startup must select the requested store explicitly and fail clearly if unavailable.
+3. Local default starts PostgreSQL without requiring FoundationDB. Keep an explicit
+   FoundationDB scale profile with the same UI, API, mail behavior and service options.
+   Update install docs and scripts together; a compiled driver alone is insufficient.
+4. Run first-run, admin/People/password, SMTP-to-webmail and restart tests on the exact
+   candidate. Capture commit, image ID, backend, fixtures and results. Record a usable
+   baseline for subsequent Rust ports; failures are fixes to make here, not waivers.
 
-**Oracle.** In this order of strength: the inherited engine suite (R1), the ledger's live tests, differential
-tests of old against new on the same inputs, the relevant RFC test vectors, and fuzzing for parsers.
+**Done:** a fresh disposable PostgreSQL install reaches every existing feature surface;
+its live suites run; restart retains synthetic mail/settings. FoundationDB support
+still builds. No FDB repair detour is required to establish the PostgreSQL baseline.
 
-### Stage 1: decisions per upstream-authored dependency
+### A2 — Finish the existing shippinTECH feature ports
 
-All twelve packages are replaced. They are small enough to take one at a time and big enough to need an oracle.
+**Files:** `crates/common/src/shippin/`, `crates/http/src/shippin/`,
+`crates/services/src/alerts.rs`, their call sites in `email`, `groupware`, `directory`,
+`store` and `http`; old `crates/common/src/enterprise/`,
+`crates/services/src/task_manager/scheduler.rs`,
+`crates/jmap/src/registry/mapping/principal.rs`,
+`crates/common/src/cache/directory.rs`, `crates/main/src/main.rs`.
 
-| Slice | Dependency | What it is | Replace by | Oracle beyond the engine suite |
-|---|---|---|---|---|
-| S1 | `sieve-rs` | Sieve interpreter and script parser (RFC 5228 and extensions) | Own crate `shippin-sieve` | RFC 5228 and extension vectors; differential run over every script in `tests/` |
-| S2 | `smtp-proto`, `mail-builder` (two versions), `hashify`, `encodify` | SMTP command and reply parsing, message building, compile-time lookup helpers | Own crates; `phf` or std for lookups | Differential and fuzz; message round trips |
-| S3 | `mail-parser` | RFC 5322 and MIME parsing (16 crates use it) | Own crate | Differential over a public corpus plus the engine suite's messages; fuzzing; byte-exact attachment round trip |
-| S4 | `mail-auth` | DKIM, SPF, DMARC, ARC (RFC 6376, 7208, 7489, 8617) | Own crate | RFC test vectors; interoperability against a second implementation |
-| S5 | `calcard`, `jmap-tools` | iCalendar and vCard (RFC 5545, 6350, 7265), JMAP patch helpers | Own crates | RFC vectors; DAV and JMAP calendar suites |
-| S6 | `dns-update`, `jmap-client` (tests only) | DNS record management; the JMAP client the tests use | Own crate; own test client | Own client used by the ledger tests |
+For each row: identify active callers, route them to the existing own implementation,
+port missing behavior, run the stated real workflow, then remove the superseded path.
+Remove dead license validation, renewal scheduling and licensed-account caps as part
+of that cutover. Preserve real role, tenant, abuse and quota limits. Merely making
+`is_enterprise_edition()` return true is not completion.
 
-### Stage 2: the engine's own crates, by layer
+| Feature | Existing implementation to extend | Behavior that closes the row |
+| --- | --- | --- |
+| Metrics, traces, alerts | `shippin/stats.rs`, `shippin/trace_history.rs`, own alert modules | Live and stored data, retention, filters, email/webhook delivery; one collector and scheduling path, no duplicate alerts |
+| Recovery and masked addresses | `shippin/recover.rs`, `shippin/masks.rs` | Delete/restore with bytes and permissions; mask creation, delivery, disable and all previously supported uses |
+| Tenancy and identity | `shippin/orgs.rs`, `shippin/sso.rs`, `shippin/provisioning.rs`, own SCIM route | Tenant walls, delegated administration, quota enforcement, domain directories, provisioning and refusal behavior; current OIDC/SCIM subset must not hide missing baseline operations |
+| Branding and calendar templates | `shippin/brand.rs`, `shippin/calendar_templates.rs` | Domain branding, reminder/invitation content and RSVP behavior through the actual mail/groupware callers |
+| AI, spam and Sieve prompts | `shippin/ai.rs`, `spam-filter`, `common/src/scripts` | Existing provider configuration drives classification and Sieve prompts; timeout/failure/disabled behavior tested; assistant success alone does not close this |
+| Storage features | `store/src/backend/{postgres,foundationdb,composite}`, `coordinator` | SQL replicas, blob/cache sharding and cluster behavior remain available with correct writes, reads, quotas and recovery |
 
-Replaced bottom-up so each layer has a stable interface under it. One crate per slice.
+**Done:** every remaining old feature consumer has an owned replacement and passing
+behavior evidence. No license stub, renewal task or upstream entitlement is needed
+to exercise the supported features. Reuse historical F0–F11 tests, rerun against A1.
 
-| Layer | Crates | Lines | Note |
-|---|---|---|---|
-| Schema | `registry` | 87k | 82k is generated from `resources/schema/schema.json.gz` and no generator is in this tree. Own the schema and write the generator: one slice replaces a fifth of the workspace and the output is checkable against the existing structs |
-| Leaf | `utils`, `types`, `trc`, `nlp`, `http-proto` | 22k | Small and widely used |
-| Protocol | `imap-proto`, `dav-proto`, `jmap-proto`, `scim-proto` | 47k | Parser and serializer; oracle is round trip plus the independent clients from L1 and L2 |
-| Services | `smtp`, `imap`, `pop3`, `managesieve`, `dav`, `jmap`, `scim`, `spam-filter`, `email`, `groupware` | about 130k | One protocol per slice, behind its port |
-| Core | `directory`, `store`, `coordinator`, `common`, `services`, `http`, `main` | about 100k | Last. `store` needs a migration path from the inherited layout, tested against a copy of real data |
+### A3 — Own the Rust contract and remove private JMAP dispatch
 
-The first slice is **S1 (Sieve)** because it is self-contained, has a clear specification and a strong
-oracle, and the Svelte Sievepad (L3) needs a validator whose error positions we control anyway. The second is
-**the registry generator**, the largest single reduction.
+**Files:** `crates/http/src/api/{v1,registry_rest}.rs`, `crates/jmap/src/registry/`,
+`crates/registry/src/{schema,types}`, `resources/schema/schema.json.gz`,
+`api/{DESIGN.md,v1/openapi.yml}`, `ui/scripts/emit-registry.ts`,
+`ui/src/lib/contract/`, `mcpl/`.
 
-Stage 1 is closed for alpha (X8) when this table is accepted and S1's oracle runs green against the current
-`sieve-rs`. `roadmap/independence.md` records each slice's baseline revision, oracle, result and removal commit.
+1. Use the existing `/api/v1` operations as the starting contract. Define checked-in
+   shippinTECH schema sources and reproducible generators. Preserve capabilities,
+   required fields, patch semantics, errors and concurrency; private wire shapes may change.
+2. Implement the application operations directly in Rust: validation, authorization,
+   transactions, service calls and auditing. `/api/v1/registry` must stop constructing
+   `x:*` JMAP requests. Standard JMAP and other protocols call the same domain operations.
+3. Generate the Svelte client, Rust models, OpenAPI and MCP action declarations from
+   owned sources; move every product caller in the same slice. Do not maintain two APIs.
+4. Remove private extension routes, unused schemas and bundles after their callers
+   move. Test refusal/absence of retired routes and ordinary protocol interoperability.
 
-## 6. Order of work
+**Done:** a clean checkout regenerates contracts; UI and MCP invoke the same authorized
+operations; admin execution does not dispatch through the old private JMAP layer;
+full CRUD/actions/security tests pass, including partial credentials and stale edits.
 
-1. **R1** first; no completed baseline is recorded here. Then **R3**, so every later change is measured.
-2. **R2, R4, R6** the same week: CI carries the engine suite and the dumb-UI check.
-3. **L1, L2, L10, L4** (the evidence gaps), then **L3, L5, L6, L7** (the capability gaps).
-4. **R5** before any Stage 2 slice, so performance is a gate, not an opinion.
-5. **S1** starts when R1 and R3 are done; it runs in parallel with Track L because it touches different code.
-6. **L8, L9** and the owner's host items, then the alpha run: `scripts/regression.py` on the candidate image,
-   X1 to X8 checked in order, tag only when `RELEASE.md` allows it.
+### A4 — Close full Svelte and protocol capability parity
 
-Each step ends with `main` green, results recorded, and the ledger updated.
+**Files:** `ui/src/lib/shippin/`, `ui/src/lib/portal/`, `ui/src/lib/token/`,
+`ui/src/routes/`, `ui/porting/`, `ui/e2e-live/`, `ui/test-live/`,
+`deploy/local/verify*.py`, `tests/src/{smtp,imap,jmap,webdav,scim,system,store,cluster}`.
 
-## 7. Decisions made here, and what only the owner can do
+Use the coverage table below. Finish actual missing workflows: Sieve editor and
+activation, typed settings where generic CRUD loses behavior, webmail search,
+independent IMAP/POP3/DAV/ManageSieve/OAuth checks, accessibility and mobile flows.
+Retain webmail compose/reply/forward, drafts, attachments, calendars, contacts, files,
+Docs, administration and existing integrations. Reuse style tokens; this is not a
+visual redesign. Inventory entries need workflow proof, not just a reachable route.
 
-Decisions taken so the work does not stall. Edit this section to overrule any of them.
+**Done:** each existing capability has candidate-image evidence. Implement or explicitly
+leave open unfinished promises such as the Microsoft server adapter; never silently
+call a mock a real integration or remove the screen to make a test pass.
 
-1. Alpha does not wait for the engine rewrite; independence ships slice by slice (section 2).
-2. `provenance/own-paths.txt` lists `ui/`, `api/`, `mcpl/`, `.ai/`, `scripts/`, `brand/`, `deploy/`,
-   `resources/product/` and the `shippin` modules as the owner's. Strike what is not.
-3. The platform port and Docs/Drive beyond v1 scope are after alpha.
-4. All twelve upstream-authored packages are replaced, Sieve first, then the registry generator.
-5. Waived gaps: none yet.
+### A5 — Close the remaining source and dependency separation
 
-Only the owner can: provide the Google and Microsoft OAuth clients and test accounts (gate 4); publish a DNS
-record for RELEASE B1; run the host items (RELEASE B3 to B6) or give a Linux machine to run them; choose the alert
-channel (D3); decide RELEASE C2 to C5; lift the pull-request freeze.
+**Files:** `provenance/`, `scripts/provenance.py`, `Cargo.toml`, `Cargo.lock`,
+crate manifests, `crates/{smtp,imap,pop3,jmap,dav,scim,managesieve,email,groupware,
+common,directory,store,coordinator,services,registry,types,trc,utils,nlp}` and protocol
+crates; exact replacement files are selected by the source decisions below.
+
+Produce a per-file/per-component decision: **existing shippinTECH work: keep;
+permitted dependency: retain with notices; confirmed remaining inherited application
+implementation: replace; uncertain origin: unresolved**. Validate earlier rewrites
+before adding them to the replacement queue. A squashed commit or path name alone
+cannot decide this. This accounting runs alongside A2–A4; it must not block A1.
+
+The executable replacement order is: owned feature wiring (A2), private application
+contracts/schema (A3), filtering runtime where still required, then remaining mail,
+groupware, persistence and infrastructure components actually identified as inherited.
+Each replacement gets its exact files, observable specification and affected suites
+before coding. Replace only the identified component; retain the shared storage and
+protocol behavior. `roadmap/independence.md` records those decisions and removal commits.
+
+`sieve-rs` is a concrete remaining dependency boundary with user and MTA-stage
+integration; retain the full extension/function/plugin inventory when replacing it.
+Do not replace MIME, auth, parser or utility packages solely because of their author.
+Any such dependency retained is attributed as a dependency, not claimed as our code.
+
+**Done:** every shipped application source/generated artifact has a resolved origin;
+all required replacements have passing behavior evidence and removal commits;
+no forbidden upstream source, binary, runtime service or build download remains.
+The present inventory does not yet establish how many files this requires. Removing
+EE gates, translating to Svelte or changing headers cannot by itself close this gate.
+
+### A6 — Prove a complete alpha and the PostgreSQL-to-scale path
+
+**Files:** `scripts/{regression.py,engine-suite.sh}`, `.github/workflows/check.yml`,
+`tests/`, `deploy/`, `roadmap/capabilities.csv` and its generator, `RELEASE.md`.
+
+1. Make the regression runner execute the actual required matrix: PostgreSQL baseline,
+   FoundationDB scale, existing supported-backend checks, both default and scale builds.
+   Current runner only selects RocksDb/Sqlite and needs correction. Supply Docker/service
+   prerequisites and `STORE`/`COORDINATOR`; timeouts, ignored and missing tests stay visible.
+2. Run full UI, live contracts/browser, independent protocol and engine suites on a
+   named candidate. Fix failures. Record historical results separately from this run.
+3. Prove new-product backup/restore and PostgreSQL-to-FoundationDB transfer with synthetic
+   messages, attachments, accounts, ACLs, keys and jobs. Pause writes for the first
+   supported transfer if needed; verify counts/content and restart the same application.
+   Do not promise automatic online scale migration before it is implemented and tested.
+4. Exercise unavailable storage, exhausted disk, interrupted jobs and restart. Requests
+   must have bounded failure, useful errors and health reporting, followed by recovery.
+5. Record throughput, latency and memory fixtures and acceptance thresholds before
+   evaluating the candidate. Build/run the server on Linux amd64 and arm64. The earlier
+   desktop-commander platform request was withdrawn and is not a new client project.
+
+**Done:** A0–A5 closed; all capability tests pass on the candidate or a specifically
+identified unfinished feature remains a blocker; fresh install and scale transfer
+work; release rows are reconciled with evidence. No global zero-regression or
+independence claim is made from a green build alone. No `v*` tag before RELEASE closes.
+
+### Commands and evidence locations
+
+These are execution commands, not a claim that they have all passed. Rust scale
+checks need the FoundationDB client/build prerequisites. Live commands require the
+candidate stack and synthetic accounts; credentials stay in ignored local files.
+
+| Check | Command / evidence |
+| --- | --- |
+| Whole web gate | From root: `python scripts/regression.py --only web`; on Windows use Git Bash for POSIX deploy checks, and report any POSIX-only check not run |
+| Focused Svelte diagnostics | From `ui`: `npm run check`, `npm test`, `npm run build`, `npm run test:browser`; the full web gate also checks contracts, branding, inventory and MCPL |
+| PostgreSQL build | `cargo check -p shippin-tech --locked --no-default-features --features "postgres enterprise"` |
+| Shared scale build | `cargo check -p shippin-tech --locked --no-default-features --features "postgres scale enterprise"`; retain other supported feature checks |
+| Live owned contract and browser flows | From `ui`: `npm run test:contract-live`, `npm run test:live`; root `python scripts/regression.py --only live` also runs the existing local verifier scripts |
+| Engine matrix | A6 first fixes `scripts/regression.py` and `scripts/engine-suite.sh` to select PostgreSQL/FoundationDB and their Cargo features/services; then `python scripts/regression.py --engine`. The current command alone does not cover that matrix |
+| Results | `REGRESSION-RESULTS.md`, `roadmap/regression-results.json`, per-run logs, and capability-specific fixtures; record commit/image/backend, passed/failed/ignored/not-run counts and failure causes |
+| Source/contract closure | Regeneration checks plus a clean isolated build; inspect dependency graph and active routes for the specifically retired sources/methods. Do not use a branding string search as the ownership test |
+
+## 4. Every capability has a destination
+
+IDs refer to [the existing ledger](roadmap/capabilities.csv). Its `verified` statuses
+are historical; A6 attaches current commit/image/backend results. All rows remain
+in the floor. This table assigns work; it does not upgrade their status.
+
+| Capability IDs | Required coverage | Packages |
+| --- | --- | --- |
+| M1, M2, M3, M4 | Delivery, submission, relay refusal, queue retry/failure reports, DKIM/SPF/DMARC/ARC, TLS policy | A1, A4, A5, A6 |
+| M5, M6, I9 | IMAP flags/search/move/IDLE, POP3 retrieve/delete, OAuth mail-client login | A4, A5, A6 |
+| M7, M8, M9 | Webmail read/thread/flags, compose/reply/forward/drafts, byte-exact attachments, live search | A1, A4, A6 |
+| M10, C7 | Spam learning/classification, Sieve editor, runtime extensions and ManageSieve effects | A2, A4, A5, A6 |
+| M11, M12, M13 | Masks, undelete and split-domain relay | A2, A4, A6 |
+| C1, C2, C3, C4 | Calendar/repeats/invitations/templates, contacts, independent DAV round trips and ACLs | A2, A4, A5, A6 |
+| C5, C6 | File operations, sharing and isolation, Docs editing/autosave | A3, A4, A6 |
+| I1, I2, I3, I4, I5, I6, I7, I8 | Setup, credentials/MFA, directories/SSO, SCIM, tenants/roles/quotas, CRUD, signup/DNS, keys | A0, A1, A2, A3, A4, A6 |
+| G1, G2 | Existing Google workflows and unfinished Microsoft connection; consent, bytes, expiry, revocation and isolation | A4, A6 |
+| G3, G4 | AI/MCP approvals, declared operations and learning progress | A2, A3, A4, A6 |
+| O1, O2, O3 | Metrics, tracing and alerts | A2, A6 |
+| O4, O5, O6, O8, O9, O10 | Install, backup/restore, TLS, monitoring, product data durability, bounded storage failures; old-layout migration is not mandatory | A1, A6 |
+| O7 | PostgreSQL first, FoundationDB scale, replicas/shards, blob/cache/coordination options | A1, A2, A6 |
+| U1, U2, U3 | Full Svelte workflows, accessibility/mobile, performance evidence | A0, A3, A4, A6 |
+
+## 5. After separation: improvements and additional services
+
+Webmail is already part of alpha and is not deferred. Once the separation gate
+closes, review upstream fixes as references: record the bug, affected behavior and
+our reproducer, then implement and test the improvement in our architecture.
+No upstream merge is the default integration mechanism.
+
+Campaigns such as listmonk integrate behind a shippinTECH Rust service adapter and
+Svelte screens, using the same identity, permissions, secrets, jobs and audit model.
+Start with list/subscriber management, consent/unsubscribe/suppression, campaign
+submission and delivery events. Keep campaign load isolated from transactional mail.
+Evaluate the service's own dependency terms separately; integration does not make
+its source shippinTECH-authored. Do not make campaigns a prerequisite for completing
+the mail/API separation. shippin.ai uses the same declared operations, not a second
+control plane.
+
+## 6. Immediate next task and reporting rule
+
+**Next implementation task: A0.** Finish the pending consumer changes, remove the
+obsolete private-call builders, run the full web gate and commit that bounded result
+to main. Then execute A1: PostgreSQL default install and a real candidate baseline.
+No architecture selection or waiver answer is needed from the owner to start.
+
+Each completion report contains: commit, files/behavior changed, commands/results,
+current image/backend when applicable, and exact remaining blockers. Claims about
+latest upstream superiority wait for a dated feature/benchmark comparison. The alpha
+is measured against full capability coverage, not a reduced free-plan demonstration.

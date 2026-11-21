@@ -8,7 +8,13 @@
 
 **Rule: no `v*` tag until every item below is Done, or Jesse has marked it Waived in this file.** A tag builds the image and moves the `release` channel; hosts running `auto-update.sh` take it within five minutes. Until then, work lands on `main` and is tested on the local Docker stack (`deploy/local/`).
 
-Scope of v1: a hosted mail service where customers bring their own domain, prove it by DNS, and manage a capped number of mailboxes. Out of scope, and hidden from customers by the navigation: the platform port (C1 to C4), Drive (W2), Docs (W3) and full admin-portal parity (P2, P4, P5). Those stay in `ui/porting/work-packages.json`.
+Owner scope update, 2026-11-21: the alpha is the full shippinTECH capability set in
+[ROADMAP.md](ROADMAP.md), including webmail, administration, calendar, contacts,
+Drive, Docs and existing Enterprise-equivalent features. PostgreSQL is the initial
+install and FoundationDB remains the scale option. The previous reduced free-plan
+scope does not authorize hiding or dropping existing capabilities. Historical Done
+rows below retain their dated evidence; they must be rerun against the candidate
+where required by ROADMAP A6. This update does not mark any open row Done or Waived.
 
 Branches, checked 2026-11-10: `shippin-tech/shippin-tech` and `shippin-tech/landing` each have one branch, `main`, fully pushed. A fresh clone fetches the landing submodule at the recorded commit.
 
@@ -42,7 +48,7 @@ Branches, checked 2026-11-10: `shippin-tech/shippin-tech` and `shippin-tech/land
 
 | Id | Decision | Why it blocks | Status |
 | --- | --- | --- | --- |
-| C1 | **Licensing.** This server is derived from ShippinTECH. Most source files had their license headers removed, and 172 sections marked with ShippinTECH's enterprise license are compiled in by default. Options: restore the upstream notices and comply with them (including source for hosted users), build without the `enterprise` feature, or license it from ShippinTECH. | A public hosted service distributes this code to every customer. | Open |
+| C1 | **Source separation and attribution.** Complete ROADMAP A2, A3 and A5: retain verified shippinTECH work, replace remaining inherited application components, own schema generation and resolve shipped dependency origins/notices. Removing headers or disabling features does not close this row. | Full capability preservation and an accurate source/dependency record for the finished product. | Open |
 | C2 | Terms of service, privacy policy, acceptable use policy, and working `abuse@` and `postmaster@` addresses, linked from `/signup`. | Free mail services are abuse targets and need published rules to act on. | Open |
 | C3 | Launch numbers: 5 mailboxes, 20 aliases, 1 GB each, 200 sent messages a day, 100 domains on the server. | They go into the host's `server.env`. | Open |
 | C5 | Forwarding mail to outside addresses. Wanted by some owners, but on a free plan it is a common spam relay route and breaks SPF for the forwarded mail unless the server rewrites senders (SRS). | Decide: leave out of v1, allow only for paid plans, or build with SRS and a daily cap. | Open |

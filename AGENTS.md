@@ -11,11 +11,15 @@ Nothing in this repository is a released or supported product. Do not describe i
 ## Regression floor
 
 Zero regression is the minimum acceptance bar for this fork. Follow `REGRESSION.md`.
-Keep existing capabilities, client/API compatibility, data and settings intact through
-integration work and the independent-engine rewrite. A staged demo does not authorize
-removing an existing capability. Replace a working component only after equivalent
-behavior and migration/recovery checks pass. Report untested behavior as unverified;
-do not skip or weaken checks to claim parity.
+Owner clarification, 2026-11-21: keep all existing capabilities and standard-protocol
+interoperability. Fresh pre-release installs and breaking upstream private API/data
+formats are authorized; do not build a legacy compatibility layer. New-product
+durability, backup/recovery and PostgreSQL-to-FoundationDB scaling still need proof.
+PostgreSQL is the initial install; FoundationDB is the scale option, with existing
+storage versatility retained. Follow [ROADMAP.md](ROADMAP.md) for the execution order.
+Reuse existing Svelte and shippinTECH Rust feature implementations. Replace a working
+component only after its behavior checks pass. Report untested behavior as unverified;
+do not skip or weaken checks or remove capabilities to claim parity.
 
 ## Pull requests are frozen
 
@@ -72,7 +76,7 @@ the screens declare (`mcpl/README.md`, "Proposed extension: drive"). No tool tak
 
 When your user runs or upgrades a mail host, follow `deploy/README.md`. In short:
 
-- **Install:** on a Linux host with Docker, after `docker login ghcr.io`, run `install.sh --hostname <mail host>` (see "Install on one host"). It is the only supported install. It bundles FoundationDB, object storage and NATS on the host. Do not suggest the old release-binary installer or the browser setup wizard; neither applies any more.
+- **Install:** the current Linux Docker installer is `install.sh --hostname <mail host>` after `docker login ghcr.io` (see "Install on one host"). It currently bundles FoundationDB, object storage and NATS. This is the current implementation, not the target: ROADMAP A1 changes new installs to PostgreSQL first and retains the FoundationDB scale profile. Do not claim that change has shipped before its tests pass. Do not suggest the old release-binary installer or browser setup wizard.
 - **First sign-in:** a new server prints a one-time setup key, and `install.sh` and `update.sh` repeat it. Tell your user to open `/login`, enter `admin`, then paste the key. The page then makes them create their own administrator, and the key stops working. It also stops working 24 hours after it was made (`SETUP_KEY_HOURS`); restarting the server then prints a new one. Until then the key stays the same across restarts and is saved in `/var/lib/shippin.tech/setup-key` in the data volume. Next, the new administrator authors the service keys at `/shippin/admin/keys` (`KEYS.md`). `RECOVERY_ADMIN` in `server.env` is optional break-glass, not a required step.
 - **Upgrade:** in the instance directory, always run `bash update.sh --check` first and read its output, then `bash update.sh <image digest>`. `update.sh` keeps the running server's settings, whatever layout it came from. From v0.1.2, follow "From v0.1.2" in `deploy/README.md`. Never run `docker compose down -v`, delete volumes, or edit `/var/lib/shippin.tech/config.json` by hand.
 - **Check:** `sudo bash verify-install.sh` in the instance directory.

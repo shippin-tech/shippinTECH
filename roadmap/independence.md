@@ -1,27 +1,52 @@
 # Independence ledger
 
-The record for Track S of [ROADMAP.md](../ROADMAP.md). One row per slice: what is replaced, against which
-baseline, what proves the replacement, and the commit that removed the original. A slice with no oracle result
-is not started, whatever the code looks like.
+The source and dependency record for A2, A3 and A5 of [ROADMAP.md](../ROADMAP.md),
+updated 2026-11-21. Reuse the existing shippinTECH implementations before specifying
+new replacements. Each actual replacement records files, baseline behavior, tests
+and the removal commit. Missing test evidence means unverified, not automatically
+unwritten: the earlier squashed-baseline classification cannot establish authorship.
 
 Measured inventory: [PROVENANCE.md](../PROVENANCE.md). Rules: [REGRESSION.md](../REGRESSION.md). A replacement
 is written from the published specification and the product's own requirements. The original is the baseline to
 compare against, not text to be paraphrased; it stays until the oracle passes and goes in its own commit.
 
-## Stage 1: decisions
+## Minimal replacement decisions
+
+The manifest inventory in `provenance/dependencies.csv` records S2–S6 as
+`Apache-2.0 OR MIT`; author identity alone is not a reason to replace them. Retain
+these as attributed third-party dependencies, verifying the exact resolved package
+and notices before distribution. This is not a claim that they are our source.
+S1 is recorded as `AGPL-3.0-only` and remains a replacement boundary for the requested
+independent product. No waiver discussion blocks the engineering work.
 
 | Slice | Package (version) | Lines | Decision | Status |
 |---|---|---:|---|---|
 | S1 | `sieve-rs` 0.7.3 | 19,233 | Replace | Specified below; baseline not yet run |
-| S2 | `smtp-proto` 0.2.5, `mail-builder` 1.0.0 and 0.5.0, `hashify` 0.2.9, `encodify` 1.0.2 | not measured | Replace | Not started |
-| S3 | `mail-parser` 0.11.9 | not measured | Replace | Not started |
-| S4 | `mail-auth` 0.13.3 | not measured | Replace | Not started |
-| S5 | `calcard` 0.3.14, `jmap-tools` 0.1.8 | not measured | Replace | Not started |
-| S6 | `dns-update` 0.6.0, `jmap-client` 0.4.3 (tests only) | not measured | Replace | Not started |
+| S2 | `smtp-proto` 0.2.5, `mail-builder` 1.0.0 and 0.5.0, `hashify` 0.2.9, `encodify` 1.0.2 | not measured | Retain as attributed dependencies; verify resolved versions/notices | No replacement scheduled solely for upstream authorship |
+| S3 | `mail-parser` 0.11.9 | not measured | Retain as an attributed dependency; verify resolved version/notices | No replacement scheduled solely for upstream authorship |
+| S4 | `mail-auth` 0.13.3 | not measured | Retain as an attributed dependency; verify resolved version/notices | No replacement scheduled solely for upstream authorship |
+| S5 | `calcard` 0.3.14, `jmap-tools` 0.1.8 | not measured | Retain as attributed dependencies; verify resolved versions/notices | No replacement scheduled solely for upstream authorship |
+| S6 | `dns-update` 0.6.0, `jmap-client` 0.4.3 (tests only) | not measured | Retain as attributed dependencies; verify resolved versions/notices | No replacement scheduled solely for upstream authorship |
 | S7 | `registry` schema generator (82k generated lines, no generator in tree) | 81,831 | Own the schema and the generator | Not started |
 
 Line counts of the other packages are measured when their slice is specified, from the published source, not
 guessed.
+
+## Application source decisions
+
+These are separate from the package table. No row is closed merely by changing a
+name, license header or feature flag. Exact file decisions and their evidence are
+the output of ROADMAP A5, alongside the ports; unresolved origin is not a blanket
+instruction to rewrite the whole crate.
+
+| Area | Execution package | Decision and completion requirement |
+| --- | --- | --- |
+| Existing Svelte product and style tokens | A0, A4 | Keep; finish missing workflows and prove the full capability inventory |
+| `common/src/shippin`, own HTTP/services modules | A2 | Keep and extend; map each remaining old caller to these implementations, port missing behavior, then remove obsolete paths |
+| Private registry API and generated schemas | A3 / S7 | Own application operations, schema sources and generation; remove private JMAP dispatch after all consumers move |
+| Remaining mail/groupware application code | A5 | Identify actual unresolved/inherited implementations per file; replace required slices with mail/protocol behavior proof |
+| Storage, coordination and infrastructure application code | A1, A2, A5, A6 | Preserve PostgreSQL, FoundationDB and other existing capabilities; replace only identified source while retaining backend semantics |
+| Third-party packages and assets | A5 | Record resolved source/license/notices; retain permitted dependencies and replace those incompatible with the chosen product boundary |
 
 ## S1: the Sieve runtime
 

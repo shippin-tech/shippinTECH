@@ -1,6 +1,6 @@
 # shippinTECH ownership and product boundary
 
-Owner direction, 2026-11-20. This is the target and its acceptance criteria, not a claim
+Owner direction, updated 2026-11-21. This is the target and its acceptance criteria, not a claim
 that the current fork is independent. [ROADMAP.md](../ROADMAP.md) owns sequencing;
 [REGRESSION.md](../REGRESSION.md) owns the capability floor. No release is authorized.
 
@@ -12,11 +12,12 @@ There is one product API under `/api/v1`. There is no permanent Stalwart managem
 API, private extension compatibility layer, bundled upstream UI or inherited engine
 required to build or run the finished product.
 
-Standard mail and groupware protocols remain supported capabilities. Existing
-messages, attachments, settings, permissions and workflows must survive replacement.
-The owner authorizes coordinated changes to private product contracts; this is not
-permission to discard behavior or data. An import tool may understand the old export
-format without making the old engine a runtime dependency.
+Standard mail and groupware protocols and all existing features remain supported.
+The owner authorizes fresh pre-release installs and breaking private product APIs
+and historical data formats; a legacy compatibility/import layer is not required.
+New-product messages, attachments, settings, permissions and workflows still need
+durability and recovery. PostgreSQL is the initial database; FoundationDB is the
+scale option behind the same application boundary. Preserve other storage options.
 
 ```mermaid
 flowchart TD
@@ -45,11 +46,11 @@ Contract generation, centralized permissions and one event stream remain work to
 
 | Boundary | Required completion evidence |
 | --- | --- |
-| Exact baseline | Identify the original upstream revision in addition to the local comparison commit; inventory all original capabilities and fork additions |
+| Baseline | Inventory existing capabilities and fork additions with test evidence now; record the exact upstream revision when known and state comparison limits when unknown |
 | Entire WebUI | Every source inventory entry has an owned replacement or a documented retained asset with provenance; full workflow, permissions, error, keyboard, mobile and localization checks pass before bundle retirement |
 | API | Every product consumer uses the owned contract; no obsolete management route or private registry extension is needed; negative tests prove retired routes are absent |
-| Engine and dependencies | Each slice in `independence.md` passes its behavioral oracle; final isolated build and runtime have no inherited source, generated artifact, upstream-authored dependency or old engine service |
-| Data | Export/import preserves identifiers or records an explicit mapping, message/attachment bytes, credentials where supported, settings and ACLs; interrupted import is recoverable and preserves the original |
+| Engine and dependencies | Reuse existing shippinTECH implementations; replace confirmed remaining inherited application components with behavioral proof. Retain individually permitted third-party dependencies with notices. No old engine service or unresolved required application source remains |
+| Data | Fresh pre-release installation is allowed. New-product persistence, backup/restore and PostgreSQL-to-FoundationDB transfer preserve content, credentials, settings, ACLs and jobs; interrupted transfer is recoverable |
 | Operational behavior | Restart, crash, stalled store, bounded timeouts, queue retries, backup and restore pass against synthetic fixtures; measured performance stays inside recorded thresholds |
 | Authorship | Retained code and assets have recorded origin; renaming or generated output does not establish ownership; unresolved provenance blocks the independence claim |
 

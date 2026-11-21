@@ -1,9 +1,24 @@
 ---
-description: shippin.tech product boundary. Zoho client map is current work. Docs wait.
+description: shippinTECH full alpha. ROADMAP.md controls scope and execution.
 alwaysApply: true
 ---
 
 # Product boundary
+
+## Current authority — 2026-11-21
+
+[ROADMAP.md](../../ROADMAP.md) supersedes the historical scope below. Keep the full
+existing Svelte suite, including webmail, calendar, contacts, Drive and Docs. Reuse
+the shippinTECH Rust feature implementations. PostgreSQL is the initial install;
+FoundationDB is the scale option, with storage versatility retained. One owned API,
+no permanent upstream private compatibility layer, no loss of capabilities.
+Fresh pre-release installs are authorized. Follow REGRESSION.md for evidence.
+
+Everything below is historical design context, not an active exclusion list or
+execution order. In particular, its FDB-first direction and "Do not add" list no
+longer apply. Additional campaign services follow the separation milestone.
+
+## Historical context
 
 shippin.tech is the open product and the brand. shippin.cloud is later paid hosting of the same server, not a second mail engine.
 

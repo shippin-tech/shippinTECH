@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "id": "2026-11-21-alpha-execution-map",
+  "title": "One executable shippinTECH alpha and upstream separation plan",
+  "costar": {
+    "context": "The owner stopped implementation and requested a concrete complete execution map using existing Svelte and Rust work, PostgreSQL first and FoundationDB at scale.",
+    "objective": "Replace conflicting active planning directions with one file-mapped sequence and capability acceptance gates.",
+    "style": "Concrete scope, dependencies and observed evidence.",
+    "tone": "Direct.",
+    "audience": "Owner and the next implementing agent.",
+    "response": "ROADMAP.md is the execution plan; no product implementation is declared complete by this documentation change."
+  },
+  "sources": [
+    {"kind":"code","ref":"ROADMAP.md"},
+    {"kind":"code","ref":"REGRESSION.md"},
+    {"kind":"code","ref":"AGENTS.md"},
+    {"kind":"code","ref":"RELEASE.md"},
+    {"kind":"code","ref":"roadmap/shippintech-foundation.md"},
+    {"kind":"code","ref":"roadmap/independence.md"},
+    {"kind":"code","ref":"roadmap/capabilities.csv"},
+    {"kind":"code","ref":"roadmap/build_capabilities.py"},
+    {"kind":"code","ref":"roadmap/known-failures.md"},
+    {"kind":"code","ref":"PROVENANCE.md"},
+    {"kind":"code","ref":"provenance/own-paths.txt"},
+    {"kind":"code","ref":".cursor/rules/product-boundaries.mdc"},
+    {"kind":"code","ref":".cursor/rules/license-and-scale.mdc"},
+    {"kind":"code","ref":"crates/common/src/shippin/mod.rs"},
+    {"kind":"code","ref":"crates/common/src/enterprise/config.rs"},
+    {"kind":"code","ref":"crates/common/src/enterprise/license.rs"},
+    {"kind":"code","ref":"crates/services/src/task_manager/scheduler.rs"},
+    {"kind":"code","ref":"crates/http/src/api/registry_rest.rs"},
+    {"kind":"code","ref":"crates/main/Cargo.toml"},
+    {"kind":"code","ref":"crates/store/src/build/registry.rs"},
+    {"kind":"code","ref":"crates/store/src/registry/local.rs"},
+    {"kind":"code","ref":"Dockerfile.fdb"},
+    {"kind":"code","ref":"deploy/local/compose.yaml"},
+    {"kind":"code","ref":"deploy/local/start.ps1"},
+    {"kind":"code","ref":"deploy/local/README.md"},
+    {"kind":"code","ref":"tests/Cargo.toml"},
+    {"kind":"code","ref":"scripts/engine-suite.sh"},
+    {"kind":"code","ref":"scripts/regression.py"},
+    {"kind":"code","ref":".github/workflows/check.yml"}
+  ],
+  "concerns": [
+    "A REST facade still dispatches private JMAP internally and does not establish engine independence.",
+    "The license verifier is a failing stub, but removing its callers alone does not port every affected feature into the existing shippin implementations.",
+    "The provenance report compares a squashed baseline and cannot determine original authorship or the amount of work remaining.",
+    "Existing capability ledger statuses are historical evidence, not a rerun against the current candidate.",
+    "PostgreSQL must become the actual default install, not merely a compiled feature; FoundationDB and other supported backends must remain available.",
+    "A no-regression claim needs live and protocol evidence; unit tests, a renamed crate or a green cargo check are insufficient.",
+    "Old planning files forbid capabilities now required by the owner; their active scope must explicitly defer to this plan."
+  ],
+  "context": "Latest instruction is to stop product implementation and plan. Existing uncommitted API work stays intact. No waiver request is needed for this planning task.",
+  "current_state": "Local and remote main are a999153. Remote cursor/production-deploy-parity-c403 is eight commits behind main with zero unique commits. Five tracked UI files and two untracked API-plan/test files are pending. Latest full UI unit run passed 289 tests; live candidate parity remains unverified.",
+  "target_design": "One Svelte product, one owned Rust application API, shared application authorization and persistence, PostgreSQL baseline and FoundationDB scale option, all existing capabilities retained, upstream private contracts retired, and individually justified source/dependency separation.",
+  "changes": [
+    "Rewrite ROADMAP.md with ordered packages, exact implementation boundaries, capability coverage, acceptance evidence and an immediate next task.",
+    "Align AGENTS, REGRESSION, foundation, independence, release scope and active Cursor rules with the owner's pre-release and storage requirements.",
+    "Keep historical proof separate from current candidate verification and do not mark implementation tasks complete."
+  ],
+  "boundaries": [
+    "Planning and documentation only after the user's stop instruction; no further product edits, running deployments, releases, issue creation or PRs.",
+    "No loss of features, no mandatory upstream data/API compatibility, no removal of supported storage options, no dependency rewrite solely because of its author.",
+    "No edits to generated provenance or capability statuses without corresponding implementation evidence."
+  ],
+  "verification": [
+    {"name":"Operating schema","command":"python .ai/machine/organize.py --check","proves":"The new plan record conforms to repository operating schemas.","expected":"All operating records validate.","result":"Passed: 6 modules, 406 lines, 53 documents, 165 events, 62 messages, 135 tools, 44 journal entries."},
+    {"name":"Whole plan coverage","command":"python target/check-alpha-plan.py","proves":"Every capability ledger ID is assigned in ROADMAP, new local plan links resolve, and the dependent policy files point to the current direction.","expected":"All capability IDs covered, no new broken plan links, policy pointers present; unchanged broken references reported separately.","result":"Passed: 46 capability IDs assigned, 19 local links resolved, 7 packages with completion gates and 7 policy pointers. Initial check found pre-existing AGENTS.md -> CONTRIBUTING.md missing; final check reports it explicitly, verified unchanged from HEAD. This document check does not certify runtime parity."},
+    {"name":"Patch hygiene","command":"git diff --check","proves":"The documentation and retained in-progress work introduce no whitespace errors.","expected":"Exit zero.","result":"Passed; Git reported line-ending conversion warnings but no whitespace errors."}
+  ],
+  "status":"implemented"
+}
