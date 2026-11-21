@@ -1,0 +1,314 @@
+﻿7976eae9a96bb3034972dd49a7aea77221f67f32|origin/main@{0}|update by push
+7976eae9a96bb3034972dd49a7aea77221f67f32|main@{0}|commit: docs: define full shippinTECH alpha execution plan
+7976eae9a96bb3034972dd49a7aea77221f67f32|HEAD@{0}|commit: docs: define full shippinTECH alpha execution plan
+a99915375d94081b17484ce4a652b0e04dff9194|origin/main@{1}|update by push
+a99915375d94081b17484ce4a652b0e04dff9194|main@{1}|commit: fix: preserve management API results during Svelte cutover
+a99915375d94081b17484ce4a652b0e04dff9194|HEAD@{1}|commit: fix: preserve management API results during Svelte cutover
+00b1f9af51745e2c0033fa0b81f57a2449b4b27b|origin/main@{2}|update by push
+00b1f9af51745e2c0033fa0b81f57a2449b4b27b|main@{2}|commit: feat: Refactor account and bootstrap adapters to use registry client; add tests for API interactions
+00b1f9af51745e2c0033fa0b81f57a2449b4b27b|HEAD@{2}|commit: feat: Refactor account and bootstrap adapters to use registry client; add tests for API interactions
+bb3ad50a644f2aec950e1cebd10ed68492be775f|origin/main@{3}|update by push
+bb3ad50a644f2aec950e1cebd10ed68492be775f|main@{3}|commit: fix: reconcile main baseline and restore operating records
+bb3ad50a644f2aec950e1cebd10ed68492be775f|HEAD@{3}|commit: fix: reconcile main baseline and restore operating records
+afb98b27389c918d789b7f2e1da06690b5451888|origin/main@{4}|update by push
+afb98b27389c918d789b7f2e1da06690b5451888|main@{4}|commit: feat: Enhance regression testing and evidence validation
+afb98b27389c918d789b7f2e1da06690b5451888|HEAD@{4}|commit: feat: Enhance regression testing and evidence validation
+b335bce18c0683413434d7f9ec918fa9894b6186|origin/main@{5}|update by push
+b335bce18c0683413434d7f9ec918fa9894b6186|main@{5}|commit: fix(regression): python shims for bash steps, POSIX-only steps reported as not run, partial runs never replace a full report
+b335bce18c0683413434d7f9ec918fa9894b6186|HEAD@{5}|commit: fix(regression): python shims for bash steps, POSIX-only steps reported as not run, partial runs never replace a full report
+1abdbb93b45f2e565b53d7d7b8c3d3d49f711acb|main@{6}|commit: feat: regression runner, dumb-UI check, independence ledger; live tracing stream moves into its adapter
+1abdbb93b45f2e565b53d7d7b8c3d3d49f711acb|HEAD@{6}|commit: feat: regression runner, dumb-UI check, independence ledger; live tracing stream moves into its adapter
+478fd2e02cbacff7200650c38a62c2d90cdb6140|origin/main@{6}|update by push
+478fd2e02cbacff7200650c38a62c2d90cdb6140|main@{7}|commit: docs: one roadmap to alpha, the capability ledger, and the owner's trees claimed in provenance
+478fd2e02cbacff7200650c38a62c2d90cdb6140|HEAD@{7}|commit: docs: one roadmap to alpha, the capability ledger, and the owner's trees claimed in provenance
+178b4d89d7565b03b03c8deb9e2c2915db90fbe8|origin/main@{7}|update by push
+178b4d89d7565b03b03c8deb9e2c2915db90fbe8|main@{8}|commit: feat: Stage 0 provenance inventory (what is inherited, what is ours, which dependencies are upstream's)
+178b4d89d7565b03b03c8deb9e2c2915db90fbe8|HEAD@{8}|commit: feat: Stage 0 provenance inventory (what is inherited, what is ours, which dependencies are upstream's)
+b09dbc398a830014c72a1c24c2e373cb79b61d43|main@{9}|pull -q --rebase: Fast-forward
+b09dbc398a830014c72a1c24c2e373cb79b61d43|HEAD@{9}|pull -q --rebase: Fast-forward
+b09dbc398a830014c72a1c24c2e373cb79b61d43|origin/cursor/production-deploy-parity-c403@{0}|fetch: storing head
+b09dbc398a830014c72a1c24c2e373cb79b61d43|origin/main@{8}|fetch: fast-forward
+387c45ffb612e9a1a3fee5432f22477e8d52b5c9|origin/main@{9}|update by push
+387c45ffb612e9a1a3fee5432f22477e8d52b5c9|main@{10}|commit: test(ui): calendar invitation spec uses a future day and turns auto-add on
+387c45ffb612e9a1a3fee5432f22477e8d52b5c9|HEAD@{10}|commit: test(ui): calendar invitation spec uses a future day and turns auto-add on
+98b205c00eec24be3bab1fcc0bafb0d8cc365b65|origin/main@{10}|update by push
+98b205c00eec24be3bab1fcc0bafb0d8cc365b65|main@{11}|commit: feat: Implement zero regression requirement and enhance integration tests
+98b205c00eec24be3bab1fcc0bafb0d8cc365b65|HEAD@{11}|commit: feat: Implement zero regression requirement and enhance integration tests
+0dc5688e7387050847cf62c5bd3e69cab7ca776f|origin/main@{11}|update by push
+0dc5688e7387050847cf62c5bd3e69cab7ca776f|main@{12}|commit: fix(ui): AI settings and organisations call /api/v1; admin lists default to a page, not one row
+0dc5688e7387050847cf62c5bd3e69cab7ca776f|HEAD@{12}|commit: fix(ui): AI settings and organisations call /api/v1; admin lists default to a page, not one row
+1321722b8e33f6d6faf109cd0727421af6d34dea|origin/main@{12}|update by push
+1321722b8e33f6d6faf109cd0727421af6d34dea|main@{13}|commit: feat(api): registry records carry an ETag and PATCH/DELETE honour If-Match
+1321722b8e33f6d6faf109cd0727421af6d34dea|HEAD@{13}|commit: feat(api): registry records carry an ETag and PATCH/DELETE honour If-Match
+533ca73524f0fa0ec82b98ced1a8e4cf03318c14|main@{14}|commit: feat: integrate Google Workspace and Microsoft 365 file providers
+533ca73524f0fa0ec82b98ced1a8e4cf03318c14|HEAD@{14}|commit: feat: integrate Google Workspace and Microsoft 365 file providers
+860462e006a85e212a3c7b99f84dbfbb4ecc72f7|origin/main@{13}|update by push
+860462e006a85e212a3c7b99f84dbfbb4ecc72f7|main@{15}|commit: feat(admin): registry reads and writes go through /api/v1/registry
+860462e006a85e212a3c7b99f84dbfbb4ecc72f7|HEAD@{15}|commit: feat(admin): registry reads and writes go through /api/v1/registry
+b04bf3c3d6eb04772bc4f8770ebe8c11c0f2aff7|main@{16}|commit: feat(api): add sorting functionality to registry endpoints and update related tests
+b04bf3c3d6eb04772bc4f8770ebe8c11c0f2aff7|HEAD@{16}|commit: feat(api): add sorting functionality to registry endpoints and update related tests
+55fe46292ddb3981b6327f5e159e7966962de217|origin/main@{14}|update by push
+55fe46292ddb3981b6327f5e159e7966962de217|main@{17}|commit: feat(api)!: serve only /api/v1, delete api/compat
+55fe46292ddb3981b6327f5e159e7966962de217|HEAD@{17}|commit: feat(api)!: serve only /api/v1, delete api/compat
+5baf135530ab99e184cf809b785d3f820af77471|origin/main@{15}|update by push
+5baf135530ab99e184cf809b785d3f820af77471|main@{18}|commit: fix(ui): re-hash two rebranded webui sources in the porting inventory
+5baf135530ab99e184cf809b785d3f820af77471|HEAD@{18}|commit: fix(ui): re-hash two rebranded webui sources in the porting inventory
+1b36dfbe31f12d68e7caca973fa31f5f6ee25f3f|origin/main@{16}|update by push
+1b36dfbe31f12d68e7caca973fa31f5f6ee25f3f|main@{19}|commit: fix(ui): restore brand.generated.ts to generator output
+1b36dfbe31f12d68e7caca973fa31f5f6ee25f3f|HEAD@{19}|commit: fix(ui): restore brand.generated.ts to generator output
+fcd4859525d6ecdf8ee33d8269b935177c922292|origin/main@{17}|update by push
+fcd4859525d6ecdf8ee33d8269b935177c922292|main@{20}|commit: feat(api): registry facade over JMAP, generated ArkType contracts, loud main CI
+fcd4859525d6ecdf8ee33d8269b935177c922292|HEAD@{20}|commit: feat(api): registry facade over JMAP, generated ArkType contracts, loud main CI
+99f833b38996ad52efea6f20c3b10b409d3c388e|origin/main@{18}|update by push
+99f833b38996ad52efea6f20c3b10b409d3c388e|main@{21}|commit: feat(api): introduce v1 management API with structured error handling
+99f833b38996ad52efea6f20c3b10b409d3c388e|HEAD@{21}|commit: feat(api): introduce v1 management API with structured error handling
+73c6a537876c0dcb6e993869626074b5e6934e1c|origin/main@{19}|update by push
+73c6a537876c0dcb6e993869626074b5e6934e1c|main@{22}|commit: baseline
+73c6a537876c0dcb6e993869626074b5e6934e1c|HEAD@{22}|commit: baseline
+98a159c6676e52ead228d68ebdc36fc8fadf91e5|HEAD@{23}|reset: moving to HEAD
+98a159c6676e52ead228d68ebdc36fc8fadf91e5|HEAD@{24}|reset: moving to HEAD
+98a159c6676e52ead228d68ebdc36fc8fadf91e5|main@{23}|commit: fixing
+98a159c6676e52ead228d68ebdc36fc8fadf91e5|HEAD@{25}|commit: fixing
+6693b60be553b880ffd9c6ca9b1dd5640f41d036|origin/main@{20}|update by push
+6693b60be553b880ffd9c6ca9b1dd5640f41d036|main@{24}|Branch: renamed refs/heads/temp-public-baseline to refs/heads/main
+6693b60be553b880ffd9c6ca9b1dd5640f41d036|HEAD@{26}|Branch: renamed refs/heads/temp-public-baseline to refs/heads/main
+6693b60be553b880ffd9c6ca9b1dd5640f41d036|main@{25}|commit (initial): Initial commit for public release
+6693b60be553b880ffd9c6ca9b1dd5640f41d036|HEAD@{28}|commit (initial): Initial commit for public release
+6c4e00fc20304c5dca20366e359352228ec1b4f9|origin/main@{21}|update by push
+6c4e00fc20304c5dca20366e359352228ec1b4f9|HEAD@{29}|commit: Remove SEL License Comments and Snippets from Codebase
+c43a2a4dde022be975f33a75d4a86422d4dc9444|origin/main@{22}|update by push
+c43a2a4dde022be975f33a75d4a86422d4dc9444|HEAD@{30}|commit: Refactor references from Stalwart to ShippinTECH across documentation and codebase
+953c5deaddea596c9def7c4b313fc3cfa6079527|origin/main@{23}|update by push
+953c5deaddea596c9def7c4b313fc3cfa6079527|HEAD@{31}|commit: Refactor license statements and remove CONTRIBUTING.md
+026e1e0e8bb905ae4bd5296657af74868fb0c011|origin/main@{24}|update by push
+026e1e0e8bb905ae4bd5296657af74868fb0c011|HEAD@{32}|commit: Put the base first: license, install anywhere, fast webmail, every open item in order
+5631aca5cdc1dde13f41abe0e027e87bd6f3f813|origin/main@{25}|update by push
+5631aca5cdc1dde13f41abe0e027e87bd6f3f813|HEAD@{33}|commit: Wait for a screen to load before an agent fills it in
+4a36f08e69cb6fb3b12158ac41ccb417261e741c|origin/main@{26}|update by push
+4a36f08e69cb6fb3b12158ac41ccb417261e741c|HEAD@{34}|commit: Let AI agents work through the admin panel on the operator's own screen
+4dc693d1d1133fcb714387a134ede8e4b483e7a9|origin/main@{27}|update by push
+4dc693d1d1133fcb714387a134ede8e4b483e7a9|HEAD@{35}|commit: Make the keys page's forms before it renders
+a9cd45bee12107785353726ca17cae2abb720f19|origin/main@{28}|update by push
+a9cd45bee12107785353726ca17cae2abb720f19|HEAD@{36}|commit: Expire the install key, and let administrators author and replace service keys
+e47ad1864e6fa37084973ddb18df43cf7d6bfd9d|origin/main@{29}|update by push
+e47ad1864e6fa37084973ddb18df43cf7d6bfd9d|HEAD@{37}|commit: Record K2 as proven on image sha-444721b
+ad9f92c74227741e0093f5a8aa2afdfd722ed981|origin/main@{30}|update by push
+ad9f92c74227741e0093f5a8aa2afdfd722ed981|HEAD@{38}|commit: Check that the domain proof comes from a key that is made once and kept
+8d0382dd291563f06c5fb83d4555407d6e444fa7|origin/main@{31}|update by push
+8d0382dd291563f06c5fb83d4555407d6e444fa7|HEAD@{39}|commit: Keep browser checks running when Ubuntu's mirror is unreachable
+444721b38a4e7ea6d12bc61dc459608063645db9|origin/main@{32}|update by push
+444721b38a4e7ea6d12bc61dc459608063645db9|HEAD@{40}|commit: Give each service its own key, wrapped by a key kept outside the database
+501c64a7dbf39b1e16ffa2190551fe0d8a68421b|origin/main@{33}|update by push
+501c64a7dbf39b1e16ffa2190551fe0d8a68421b|HEAD@{41}|commit: Plan keys as one key, one job
+eeb57a1f7d6e844849318a1ce64d6bb6777ebea4|origin/main@{34}|update by push
+eeb57a1f7d6e844849318a1ce64d6bb6777ebea4|HEAD@{42}|commit: Use the right terms for why keys are safe here
+0124fd884cc615efdc4aa4e39fa3135132f089b6|origin/main@{35}|update by push
+0124fd884cc615efdc4aa4e39fa3135132f089b6|HEAD@{43}|commit: Tell people plainly to paste their keys, and why it is safe
+bb1d14a0fa0e76ffffd57452a27c77d46e2908c1|origin/main@{36}|update by push
+bb1d14a0fa0e76ffffd57452a27c77d46e2908c1|HEAD@{44}|commit: Plan updates, mail management, guided setup, connectors and SMS
+6c8f37b352da4bdd9052afba599e7afb3770a0d1|origin/main@{37}|update by push
+6c8f37b352da4bdd9052afba599e7afb3770a0d1|HEAD@{45}|commit: Record the admin and organisation panels as proven
+ff9473dd38791cacd28d860eb44c808f461ad7a5|HEAD@{46}|commit: Make the live suite repeatable on the local stack
+e7d1d431c97baf9e3f56f834a51b78d7d7e26a1c|HEAD@{47}|commit: Keep the web app within the server's limit on requests at once
+2a093c59ec49c6b3cc03bf33c38dc12f9f7a3739|origin/main@{38}|update by push
+2a093c59ec49c6b3cc03bf33c38dc12f9f7a3739|HEAD@{48}|commit: Give the old-address redirects a page so the dev server can serve them
+6b4f21473c103b02f4c27315857c58f36adc571b|origin/main@{39}|update by push
+6b4f21473c103b02f4c27315857c58f36adc571b|HEAD@{49}|commit: Teach the new panels with lessons
+f01fc3134c85b48176abf39e809ec49f64ed45bf|HEAD@{50}|commit: Add configurable AI settings and an assistant that explains the product
+2b2c8522d18e735a85b478843804fad2dbbc8946|origin/main@{40}|update by push
+2b2c8522d18e735a85b478843804fad2dbbc8946|HEAD@{51}|commit: Put our server code in its own shippin folders
+835cab0157141f23c7e142e2e42e0d692a464475|origin/main@{41}|update by push
+835cab0157141f23c7e142e2e42e0d692a464475|HEAD@{52}|commit: Make the retention and masked-address settings work on a real install
+833b91b6c3410885dd908c6103dc8281e3dfd666|HEAD@{53}|commit: Give each organisation its own panel
+30abd0fa90d0ce4627e7931680ecc5c4e6a740de|HEAD@{54}|commit: Show resources per organisation and keep server administrators out of reach
+9e0f5fe98a40a5c767fa5d73291243c82c0840ea|origin/main@{42}|update by push
+9e0f5fe98a40a5c767fa5d73291243c82c0840ea|HEAD@{55}|commit: Move the admin panel and dashboard under /shippin
+6ad34762f5e22c37601e1685a5aa8d567cd67c8f|origin/main@{43}|update by push
+6ad34762f5e22c37601e1685a5aa8d567cd67c8f|HEAD@{56}|commit: Plan the first real mail test
+5a0760e7619765b472a7c2bf0bf38e7df2658a00|origin/main@{44}|update by push
+5a0760e7619765b472a7c2bf0bf38e7df2658a00|HEAD@{57}|commit: Record SCIM provisioning as proven on image 0360927
+036092777761efcdcee4ad142ec763913d4bb12a|origin/main@{45}|update by push
+036092777761efcdcee4ad142ec763913d4bb12a|HEAD@{58}|commit: Let an identity provider manage a domain's people over SCIM
+ebd0a8a6575d37e292aacec0bc1fa2fb42d7de48|origin/main@{46}|update by push
+ebd0a8a6575d37e292aacec0bc1fa2fb42d7de48|HEAD@{59}|commit: Record calendar emails as proven on image 3dd21d6
+3dd21d6079e1b3346e7911b74b1f57fd4169ad46|origin/main@{47}|update by push
+3dd21d6079e1b3346e7911b74b1f57fd4169ad46|HEAD@{60}|commit: Let administrators reword the calendar emails
+2eee0e0ffc5a96c997b84391fb70df68b189f0a5|origin/main@{48}|update by push
+2eee0e0ffc5a96c997b84391fb70df68b189f0a5|HEAD@{61}|commit: Record domain logos and sign-in as proven on image 41755c5
+a8fc0e38979ca93290592f4319f9afed6afbdbcc|HEAD@{62}|commit: Show a domain's logo change straight away
+41755c5da83f952bb9e2aaeacc2bcadcb631a6f4|origin/main@{49}|update by push
+41755c5da83f952bb9e2aaeacc2bcadcb631a6f4|HEAD@{63}|commit: Let a domain sign its people in through its own identity provider
+f7b695343b0a843887c1a5a08ae2cf14679b226a|origin/main@{50}|update by push
+f7b695343b0a843887c1a5a08ae2cf14679b226a|HEAD@{64}|commit: Give each domain its own logo
+be16f53a270035f72b6f8c2fa4109dfbe5ac1494|origin/main@{51}|update by push
+be16f53a270035f72b6f8c2fa4109dfbe5ac1494|HEAD@{65}|commit: Record organisations as proven on image bf19d86
+bf19d86026ec2b8ca77507a8798fb3ca8de5e12a|origin/main@{52}|update by push
+bf19d86026ec2b8ca77507a8798fb3ca8de5e12a|HEAD@{66}|commit: Run separate organisations on one server
+6e12a8a74d1ba149e7c19f70c2a0cdf4c837f93e|origin/main@{53}|update by push
+6e12a8a74d1ba149e7c19f70c2a0cdf4c837f93e|HEAD@{67}|commit: Record what is proven on image 4bd24b2
+a29b28ab2ed84aac5a149a321592ae718193c57f|HEAD@{68}|commit: Fix what the live tests found
+4bd24b229448bf1cb405712b9839ba6ad99ea04d|origin/main@{54}|update by push
+4bd24b229448bf1cb405712b9839ba6ad99ea04d|HEAD@{69}|commit: Masked address test: a finished lesson stays on screen
+cdce0e8d2d9b43d0a81e7e826b9ffb33cb32d30f|origin/main@{55}|update by push
+cdce0e8d2d9b43d0a81e7e826b9ffb33cb32d30f|HEAD@{70}|commit: Let people hand out masked addresses
+d19efb923597fb094a8f29a27a04e64c0925c435|origin/main@{56}|update by push
+d19efb923597fb094a8f29a27a04e64c0925c435|HEAD@{71}|commit: Bring back deleted messages and accounts
+f2bcb86caf5941238950a1c1292e670ed6b7ddbd|origin/main@{57}|update by push
+f2bcb86caf5941238950a1c1292e670ed6b7ddbd|HEAD@{72}|commit: Warn an administrator when a server number crosses a line
+fb80191de493f64a8e2c1fd6f172af9c8533659c|origin/main@{58}|update by push
+fb80191de493f64a8e2c1fd6f172af9c8533659c|HEAD@{73}|commit: Keep mail traces and let administrators search them
+899812d3773f5966c0568510a8a8b26c98fe1a33|origin/main@{59}|update by push
+899812d3773f5966c0568510a8a8b26c98fe1a33|HEAD@{74}|commit: Deliver to the other mail system on a shared domain
+4bd18d4f4c069102db1cba47ef535993d6563302|origin/main@{60}|update by push
+4bd18d4f4c069102db1cba47ef535993d6563302|HEAD@{75}|commit: People and teams
+90aa2b934b970c7503e0cded2a08706c546ff687|origin/main@{61}|update by push
+90aa2b934b970c7503e0cded2a08706c546ff687|HEAD@{76}|commit: Document how to turn on the Google link
+0a5e3e96f36f900cd98bebd560dab13599ceebfa|origin/main@{62}|update by push
+0a5e3e96f36f900cd98bebd560dab13599ceebfa|HEAD@{77}|commit: Link a person's Google Drive
+eff7fade78b806b8192eb3dfc48c13e64d048b9a|origin/main@{63}|update by push
+eff7fade78b806b8192eb3dfc48c13e64d048b9a|HEAD@{78}|commit: Drive, sharing and Docs proven on the local stack
+0bef9292d02b3c8adceabdc14081e8fd329d5332|HEAD@{79}|commit: Docs in the browser
+23c581356cc72a72e31299bdc79820cc50ab29c8|origin/main@{64}|update by push
+23c581356cc72a72e31299bdc79820cc50ab29c8|HEAD@{80}|commit: Contacts in the browser
+c7a4f6dd2e55210d1701ed072310c3f8961755e4|origin/main@{65}|update by push
+c7a4f6dd2e55210d1701ed072310c3f8961755e4|HEAD@{81}|commit: Calendar in the browser
+303ae684b791fe464e2809de1f84ae2fb73b917a|origin/main@{66}|update by push
+303ae684b791fe464e2809de1f84ae2fb73b917a|HEAD@{82}|commit: Share from Drive
+521a9fef09e035c7d2aa0c15443dbe252bb675d0|HEAD@{83}|commit: Keep each domain's people to itself
+321d2b7f8cff4d496605018b0325710bc8f11ea6|HEAD@{84}|commit: Make file sharing mean what it says
+a59877abaacb969d54154d7e378264ea99d3348f|origin/main@{67}|update by push
+a59877abaacb969d54154d7e378264ea99d3348f|HEAD@{85}|commit: Drive in the browser
+5e9302df0f92dbddf757a6be8d4e85e9efd2a00c|HEAD@{86}|commit: Enforce storage limits on files
+1ec2d5da8419169a770cc2735b29a68a23ee6ca8|HEAD@{87}|commit: Plan the rest of the product, in order
+8444723ae2007e522c2700a6622fc993ec0319ac|origin/main@{68}|update by push
+8444723ae2007e522c2700a6622fc993ec0319ac|HEAD@{88}|commit: Live tracing and lesson progress proven on the local stack
+5cf46dc29e9455bd1148b72355599340f0303dbf|origin/main@{69}|update by push
+5cf46dc29e9455bd1148b72355599340f0303dbf|HEAD@{89}|commit: Keep MCPL lesson progress on the server per person
+1fd4e0ec036f5c01a8fefe25ac52ff09ff796b8c|origin/main@{70}|update by push
+1fd4e0ec036f5c01a8fefe25ac52ff09ff796b8c|HEAD@{90}|commit: Describe shippin.tech's own API at GET /api
+550792a1224c58e9f3705c47fba6d1144103d5f2|origin/main@{71}|update by push
+550792a1224c58e9f3705c47fba6d1144103d5f2|HEAD@{91}|commit: Own live tracing: token, filtered event stream and the Svelte screen
+69ac43199e5b1ac4280bb32fd11bece0eef9b469|origin/main@{72}|update by push
+69ac43199e5b1ac4280bb32fd11bece0eef9b469|HEAD@{92}|commit: List every enterprise feature to rebuild as our own code
+6d24414d5a09d946c4b2f72a3043882d88914b70|origin/main@{73}|update by push
+6d24414d5a09d946c4b2f72a3043882d88914b70|HEAD@{93}|commit: Prove every dashboard tab, card and chart renders live
+8b9483b327eea8c6ac417340e8bc79604de2989f|origin/main@{74}|update by push
+8b9483b327eea8c6ac417340e8bc79604de2989f|HEAD@{94}|commit: Dashboard proven live; round byte axes
+01e950421cfd918296f8c69cdbd814b7d3cd6eb4|origin/main@{75}|update by push
+01e950421cfd918296f8c69cdbd814b7d3cd6eb4|HEAD@{95}|commit: Own dashboard statistics: sampler, /api/stats and the Svelte dashboard
+4128358d89982618a36dbabc4edb3af2d091978c|origin/main@{76}|update by push
+4128358d89982618a36dbabc4edb3af2d091978c|HEAD@{96}|commit: Guide for sharing angrygaming.org with Google Workspace
+98829ff196d9aa19ff10e8bcb794352ddcbb4606|origin/main@{77}|update by push
+98829ff196d9aa19ff10e8bcb794352ddcbb4606|HEAD@{97}|commit: Establish MCPL v0: self-describing screens, one event contract, lessons
+35db53c7b7dd51c96342d2b6de43412135dadaf8|origin/main@{78}|update by push
+35db53c7b7dd51c96342d2b6de43412135dadaf8|HEAD@{98}|commit: Audit the web UI and remove the parts that pretended
+c054cf7a69f1dc61421bde100f386a1ea105df71|origin/main@{79}|update by push
+c054cf7a69f1dc61421bde100f386a1ea105df71|HEAD@{99}|commit: State pre-release plainly and enforce the pull request freeze
+12a75de39d034124051aa09175c6cd2ab5474ff3|origin/main@{80}|update by push
+12a75de39d034124051aa09175c6cd2ab5474ff3|HEAD@{100}|commit: Record the v0.1.2 upgrade drill under B6
+e77774cb7c8fb0e31045cc005d639ed5de8875d0|origin/main@{81}|update by push
+e77774cb7c8fb0e31045cc005d639ed5de8875d0|HEAD@{101}|commit: Add backups and restore for nodes with bundled services
+ea7b562df98baf9a39763426f026282cc8922ef4|origin/main@{82}|update by push
+ea7b562df98baf9a39763426f026282cc8922ef4|HEAD@{102}|commit: Fix what the install and v0.1.2 upgrade drills found
+4118bc311e5f6e10f4d141e8f3a61f03a2665f8e|origin/main@{83}|update by push
+4118bc311e5f6e10f4d141e8f3a61f03a2665f8e|HEAD@{103}|commit: Document one install, the first-run key and upgrades from v0.1.2
+bd478f73670ae364375ac7ac0219b2086ef73920|origin/main@{84}|update by push
+bd478f73670ae364375ac7ac0219b2086ef73920|HEAD@{104}|commit: One admin model, one installer, and upgrades that keep the settings
+3ed33ffa01e2166e16b87387c117266a777c33d7|origin/main@{85}|update by push
+3ed33ffa01e2166e16b87387c117266a777c33d7|HEAD@{105}|commit: Update the browser test count in the release gate
+b037200472bb92051174debc561744e87572d916|origin/main@{86}|update by push
+b037200472bb92051174debc561744e87572d916|HEAD@{106}|commit: Fix the closed-domain message and danger colour contrast
+4fe032306ebb289a489f655b3db50d822bb63e1b|origin/main@{87}|update by push
+4fe032306ebb289a489f655b3db50d822bb63e1b|HEAD@{107}|commit: Note the alert channel decision monitoring needs
+81dccbc629fac060bb6f993238ded57201a34859|origin/main@{88}|update by push
+81dccbc629fac060bb6f993238ded57201a34859|HEAD@{108}|commit: Let owners close their domain and delete its mail
+adc63933afc87893618e70bb5fc833cd3f091eec|origin/main@{89}|update by push
+adc63933afc87893618e70bb5fc833cd3f091eec|HEAD@{109}|commit: Record verified release items and fix two live test locators
+aca08e2f1f322936792b82626d56ac291684d5d1|origin/main@{90}|update by push
+aca08e2f1f322936792b82626d56ac291684d5d1|HEAD@{110}|commit: Document account self-service, webmail sending and the live browser suite
+77f24e3381d64efc3d24505ac3772b2964c43817|origin/main@{91}|update by push
+77f24e3381d64efc3d24505ac3772b2964c43817|HEAD@{111}|commit: Add an install check to run on the host
+8e3badcdcd129c321ad89fd4b3c21798268a3f1d|origin/main@{92}|update by push
+8e3badcdcd129c321ad89fd4b3c21798268a3f1d|HEAD@{112}|commit: Tell mailbox users how to recover a forgotten password
+89dd7a57e5f66edbeaa6cb3c770a074ec48793f4|origin/main@{93}|update by push
+89dd7a57e5f66edbeaa6cb3c770a074ec48793f4|HEAD@{113}|commit: Bring the portal browser tests up to date and run them in Check
+ba8108e4c370bf739c1bf599fb1e2848a4d573c1|origin/main@{94}|update by push
+ba8108e4c370bf739c1bf599fb1e2848a4d573c1|HEAD@{114}|commit: Prove an attachment survives send, receive and download in the browser
+808f12b58c3f84cb272623c8ae07f27869b5d9e5|origin/main@{95}|update by push
+808f12b58c3f84cb272623c8ae07f27869b5d9e5|HEAD@{115}|commit: Let owners set a catch-all mailbox for their domain
+a516303610de39cc96c3f4355f828dff3e0802e0|origin/main@{96}|update by push
+a516303610de39cc96c3f4355f828dff3e0802e0|HEAD@{116}|commit: Match compose fields exactly in the live browser test
+1bf18d55ee9e841ae84d19b061facaf002eab635|origin/main@{97}|update by push
+1bf18d55ee9e841ae84d19b061facaf002eab635|HEAD@{117}|commit: Send mail from webmail and test the customer journey in a real browser
+92508fec30ba13cd7935b0090ace1f2027417b77|origin/main@{98}|update by push
+92508fec30ba13cd7935b0090ace1f2027417b77|HEAD@{118}|commit: Show live DNS status for each required record on /manage
+6e51a050cffd6093cf4cb6e4036f7887a4fbcdf6|origin/main@{99}|update by push
+6e51a050cffd6093cf4cb6e4036f7887a4fbcdf6|HEAD@{119}|commit: Add account self-service and retire the dead legacy web UI download
+9b882bc6e20554c262e49602631ba7a96d17d6c8|origin/main@{100}|update by push
+9b882bc6e20554c262e49602631ba7a96d17d6c8|HEAD@{120}|commit: Add the free plan v1 release gate
+284dc2227aef2752439c40e67d17397fce487e04|origin/main@{101}|update by push
+284dc2227aef2752439c40e67d17397fce487e04|HEAD@{121}|commit: Test alias clashes with a free slot so the limit cannot mask them
+f7b5d0707fe82e33d935e46a61775a9eb49fe0b7|origin/main@{102}|update by push
+f7b5d0707fe82e33d935e46a61775a9eb49fe0b7|HEAD@{122}|commit: Fix free plan account creation, password resets and signup rollback
+d661b2a119e3f0e8e10caf8f8a1d633f238e11a2|origin/main@{103}|update by push
+d661b2a119e3f0e8e10caf8f8a1d633f238e11a2|HEAD@{123}|commit: Add the self-service free plan: signup, domain proof and a domain panel
+3dbf1e5cffa348f22a1e2ac9aaa6398d71990af0|origin/main@{104}|update by push
+3dbf1e5cffa348f22a1e2ac9aaa6398d71990af0|HEAD@{124}|commit: Keep the server config in the data volume and pin a permanent admin
+6b49bc1d2268e456cb6f5eda6fce015d4f753bb8|origin/main@{105}|update by push
+6b49bc1d2268e456cb6f5eda6fce015d4f753bb8|HEAD@{125}|commit: Follow a release channel on the host instead of typing update commands
+e7a783caf57e9b9578446e21aaba6508d46070a0|origin/main@{106}|update by push
+e7a783caf57e9b9578446e21aaba6508d46070a0|HEAD@{126}|commit: Redirect the home page in the browser, not from a server load
+92c363bcd2b3aec16fcab043bdac3495a7a81991|origin/main@{107}|update by push
+92c363bcd2b3aec16fcab043bdac3495a7a81991|HEAD@{127}|commit: Hash webui sources independent of checkout line endings
+9cf037436d0a07f7a87f3fba93cf18b9509d927f|origin/main@{108}|update by push
+9cf037436d0a07f7a87f3fba93cf18b9509d927f|HEAD@{128}|commit: Create brand/custom inside the override test fixture
+78b10d003ca745d54fdb08dc2213c2de6e8f15d2|origin/main@{109}|update by push
+78b10d003ca745d54fdb08dc2213c2de6e8f15d2|HEAD@{129}|commit: Run cheap checks on every push; keep image builds for tags
+dda25de3424a8a0d4ecad97aec98ab8bf81d9a9a|origin/main@{110}|update by push
+dda25de3424a8a0d4ecad97aec98ab8bf81d9a9a|HEAD@{130}|commit: Build images only for version tags or on demand
+70b1b5e475db0fae9f629eacadf29f0748cc9aeb|origin/main@{111}|update by push
+70b1b5e475db0fae9f629eacadf29f0748cc9aeb|HEAD@{131}|commit: Run the container build only on demand
+3737b1492550720070e232ab9045af96a45be014|HEAD@{132}|merge origin/cursor/shippin-tech-scaffolding-plan-a08a: Merge made by the 'ort' strategy.
+e4bac068fa94067f8cce7e4b9ef52ca3d3768a5e|origin/main@{112}|update by push
+e4bac068fa94067f8cce7e4b9ef52ca3d3768a5e|HEAD@{133}|commit: Add the security baseline checkboxes to the portal
+7038809488e63f89e571b9333fc3ce5308356ef9|HEAD@{134}|commit: Draw the wordmark from a pixel font
+372edd0fb241c9be00725fc1cb6d8da5789715a7|origin/main@{113}|update by push
+372edd0fb241c9be00725fc1cb6d8da5789715a7|HEAD@{135}|commit: Add central brand source with fork overlay
+c09dd9946dbeb386912a575ac96ec05ffb2e4538|origin/main@{114}|update by push
+c09dd9946dbeb386912a575ac96ec05ffb2e4538|HEAD@{136}|commit: Point repository and image references at the shippin-tech org
+a47c09faf6f89f1b34b4f3c2d2d0722502cf873f|HEAD@{137}|commit: Include control plan template in all portal image builds
+b2d82a0d04e83c9ef13bc3d33d9407c3cc73c7f9|HEAD@{138}|commit: Point landing submodule at shippin-tech/landing
+e1e44be6cc8d234a0f0067214fb95dd4a39256e9|HEAD@{139}|commit: Add optional landing submodule (shippintech/landing)
+64a966559eb14e3e6211fac096bb5db28fcf8373|origin/main@{115}|update by push
+64a966559eb14e3e6211fac096bb5db28fcf8373|HEAD@{140}|commit: Include control plan template in local web image build
+edf17757f914a7f0328695e4154680c2577c60cf|HEAD@{141}|commit: Align deploy image references to ghcr.io/shippinai/shipping-tech-scale
+9a3c2e5fac1c442cb09fc39582ad5a7efe61f332|HEAD@{142}|commit: Regenerate favicon.ico from ShippinTECH mark
+a72680f194b156dcf40451729461150001a19898|HEAD@{143}|commit: Use real ShippinTECH mark and lockup for logo, favicon, assets
+cd1f27cd3cb26c8fd317d202169d8fff6670dd2f|origin/main@{116}|update by push
+cd1f27cd3cb26c8fd317d202169d8fff6670dd2f|HEAD@{144}|commit: Inline exact SVG in BrandLogo component
+a142a7bbbe4a49a10b3b85ccc98df1340c623d0d|HEAD@{145}|commit: Use static logo.svg for BrandLogo
+6f037e89e68757e75dffd47ce19c52fb1be505b4|HEAD@{146}|commit: Replace branding with exact WebUI logo assets
+4ba9795c30527ff4228e688003b9cf1983433e24|origin/main@{117}|update by push
+4ba9795c30527ff4228e688003b9cf1983433e24|HEAD@{147}|commit: feat: enhance session management and navigation
+466237082115c6de2103bb30a5273cb2fee2e2b9|origin/main@{118}|update by push
+466237082115c6de2103bb30a5273cb2fee2e2b9|HEAD@{148}|commit: Fix ShippinTECH title and favicon branding
+8984c26569469b947e562128095681be73725aab|HEAD@{149}|commit: Add Storybook MCPL event lab and harden session flows
+c119b3c6953b9af9e17ce3d85607935e84b96e3c|origin/main@{119}|update by push
+c119b3c6953b9af9e17ce3d85607935e84b96e3c|HEAD@{150}|commit: feat: add brand logo SVG to BootstrapWizard and RegistryEditor components
+99946782e23e5a844994e7da0c0f1535380d196b|origin/main@{120}|update by push
+99946782e23e5a844994e7da0c0f1535380d196b|HEAD@{151}|commit: feat(platform): add PlatformControl, PortingBoard, and WorkspaceDeployPanel components
+0f32a869b2326a7c311443c33d78b3d2363f2585|origin/main@{121}|update by push
+0f32a869b2326a7c311443c33d78b3d2363f2585|HEAD@{152}|commit: Group remaining UI and platform work into dependent workflow packages [skip ci]
+2f6f9a7411807f44e7eda05e033192b6ced52c55|origin/main@{122}|update by push
+2f6f9a7411807f44e7eda05e033192b6ced52c55|HEAD@{153}|commit: Port live schema administration, actions and delivery tracing
+30e411ebabd1e0c28990c39d6d76f27b3bba32ce|origin/main@{123}|update by push
+30e411ebabd1e0c28990c39d6d76f27b3bba32ce|HEAD@{154}|commit: Add verified Docker mail gateway and repeatable local startup [skip ci]
+5463438b8de12966e45d1594ee446e3376a5b5e3|origin/main@{124}|update by push
+5463438b8de12966e45d1594ee446e3376a5b5e3|HEAD@{155}|commit: Fix Docker mail initialization and serve Svelte mail routes
+ceda43bd1e6d6440eb6e4a3368c3f11375f354e2|origin/main@{125}|update by push
+ceda43bd1e6d6440eb6e4a3368c3f11375f354e2|HEAD@{156}|commit: Add persistent local Docker mail test stack and image export
+26135652ef8e692434af6bbb949f1c5c871e780d|origin/main@{126}|update by push
+26135652ef8e692434af6bbb949f1c5c871e780d|HEAD@{157}|commit: Import platform baseline and prepare mail deployment
+107ac3fdade4609ab84ff21790a4396c9ec7f32b|origin@{0}|remote set-head
+107ac3fdade4609ab84ff21790a4396c9ec7f32b|origin@{1}|clone: from https://github.com/shippinAI/shipping-tech
+107ac3fdade4609ab84ff21790a4396c9ec7f32b|HEAD@{158}|clone: from https://github.com/shippinAI/shipping-tech

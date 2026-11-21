@@ -1,0 +1,38 @@
+{
+  "schema_version":"1.0",
+  "id":"2026-11-21-postgres-self-host",
+  "title":"PostgreSQL-first self-host installation with the existing scale backend retained",
+  "costar":{"context":"Owner requests committed code and a usable self-hosted product that can also be managed-hosted.","objective":"Make new Linux Docker installs select PostgreSQL by default and FoundationDB explicitly, with matching configuration, startup and backup behavior.","style":"One application and shared deployment tooling.","tone":"Factual.","audience":"Owner and implementers.","response":"Committed implementation with measured checks and explicit live limitations."},
+  "sources":[
+    {"kind":"code","ref":"install.sh"},
+    {"kind":"code","ref":"deploy/compose.yaml"},
+    {"kind":"code","ref":"deploy/config.json"},
+    {"kind":"code","ref":"deploy/update.sh"},
+    {"kind":"code","ref":"deploy/update.test.sh"},
+    {"kind":"code","ref":"deploy/backup.sh"},
+    {"kind":"code","ref":"deploy/backup.test.sh"},
+    {"kind":"code","ref":"deploy/server.env.example"},
+    {"kind":"code","ref":"deploy/README.md"},
+    {"kind":"code","ref":"deploy/auto-update.sh"},
+    {"kind":"code","ref":"deploy/host.test.sh"},
+    {"kind":"code","ref":"Dockerfile.fdb"},
+    {"kind":"code","ref":"crates/main/Cargo.toml"},
+    {"kind":"code","ref":"crates/registry/src/schema/structs.rs"},
+    {"kind":"code","ref":"crates/registry/src/schema/structs_impl.rs"},
+    {"kind":"code","ref":"crates/store/src/backend/postgres/main.rs"},
+    {"kind":"code","ref":"crates/store/src/registry/local.rs"}
+  ],
+  "concerns":["A compiled driver does not make the installer use PostgreSQL.","The image chosen must contain PostgreSQL; an older release image may not.","Changing profiles must not silently reinterpret an existing data volume as a new database.","PostgreSQL snapshots and blob copies need consistent application writes; backup must resume a stopped mail service even on failure.","A backup for one backend must not be restored into the other as if formats were interchangeable.","Secrets must stay in generated environment files and never appear in logs or committed fixtures."],
+  "context":"Deferred by the owner's stop instruction. ROADMAP now puts the known dependency cut and source closure before installer expansion. This is a draft for later A1 work; no deployment/product implementation from this plan has been applied. A minimal PostgreSQL test fixture may be specified separately when needed for cutover verification.",
+  "current_state":"The shipped scale image omits PostgreSQL. Installation, update checks and backup scripts require FoundationDB. The existing Postgres backend and environment-secret schema can be reused.",
+  "target_design":"One Compose model with common bundled services and selected postgres/foundationdb profiles; generated PostgreSQL seed references an environment secret; update and backup choose the configured backend explicitly.",
+  "changes":["Compile PostgreSQL in the common scale-capable image and default Rust build.","Add PostgreSQL service and backend-specific profiles while retaining FoundationDB.","Generate the selected store configuration and environment in install.sh; reject unsupported selection before mutation.","Make update and backup/restore backend-aware with failure-path tests.","Document the exact self-host install and scale selection; record live verification separately."],
+  "boundaries":["No release tag, production deployment, volume deletion or migration of existing user data.","No duplicate application/API, feature removal, license-gate shortcut or platform rewrite.","Existing API work is committed separately."],
+  "verification":[
+    {"name":"Deployment behavior","command":"bash deploy/update.test.sh && bash deploy/backup.test.sh && bash deploy/install.test.sh","proves":"Both backend selections, refusal cases, snapshot/restore paths and install generation behave correctly.","expected":"All assertions pass without weakening existing checks."},
+    {"name":"Compose and runtime build","command":"docker compose config --quiet; cargo check -p shippin-tech --locked --no-default-features --features postgres,enterprise","proves":"Selected services form a valid deployment and the existing Rust application compiles with PostgreSQL.","expected":"Both backend Compose configurations validate; Cargo check succeeds."},
+    {"name":"Whole deployment regression","command":"python scripts/regression.py --only web","proves":"Existing deploy script, API, contract, UI and browser checks still pass.","expected":"All applicable checks pass; POSIX-only checks run on Linux or remain explicitly unverified."},
+    {"name":"Live self-host install","command":"install.sh with a candidate image, verify-install.sh and live contract/browser suites","proves":"A real fresh PostgreSQL install, first admin, mail workflows and restart work with the exact candidate image.","expected":"Observed live success; unavailable environment is recorded as unverified."}
+  ],
+  "status":"draft"
+}

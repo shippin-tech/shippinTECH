@@ -11,6 +11,19 @@
     "response": "ROADMAP.md is the execution plan; no product implementation is declared complete by this documentation change."
   },
   "sources": [
+    {"kind":"code","ref":"crates/common/src/config/mod.rs"},
+    {"kind":"code","ref":"crates/common/src/auth/authentication.rs"},
+    {"kind":"code","ref":"crates/common/src/auth/permissions.rs"},
+    {"kind":"code","ref":"crates/common/src/storage/quota.rs"},
+    {"kind":"code","ref":"crates/common/src/cache/principals.rs"},
+    {"kind":"code","ref":"crates/common/src/network/mta.rs"},
+    {"kind":"code","ref":"crates/common/src/scripts/plugins/llm_prompt.rs"},
+    {"kind":"code","ref":"crates/spam-filter/src/analysis/llm.rs"},
+    {"kind":"code","ref":"crates/jmap/src/registry/mod.rs"},
+    {"kind":"code","ref":"crates/services/src/task_manager/alarm.rs"},
+    {"kind":"code","ref":"crates/services/src/task_manager/imip.rs"},
+    {"kind":"code","ref":"crates/services/src/task_manager/index.rs"},
+    {"kind":"code","ref":"crates/services/src/task_manager/maintenance.rs"},
     {"kind":"code","ref":"ROADMAP.md"},
     {"kind":"code","ref":"REGRESSION.md"},
     {"kind":"code","ref":"AGENTS.md"},
@@ -50,8 +63,8 @@
     "A no-regression claim needs live and protocol evidence; unit tests, a renamed crate or a green cargo check are insufficient.",
     "Old planning files forbid capabilities now required by the owner; their active scope must explicitly defer to this plan."
   ],
-  "context": "Latest instruction is to stop product implementation and plan. Existing uncommitted API work stays intact. No waiver request is needed for this planning task.",
-  "current_state": "Local and remote main are a999153. Remote cursor/production-deploy-parity-c403 is eight commits behind main with zero unique commits. Five tracked UI files and two untracked API-plan/test files are pending. Latest full UI unit run passed 289 tests; live candidate parity remains unverified.",
+  "context": "Product implementation remains stopped. The history-reconciliation plan now precedes all implementation packages: every available branch, stash and commit is inventoried and non-identical versions have explicit review packets. Existing uncommitted API work stays intact. No waiver request is needed for this planning task.",
+  "current_state": "Last pushed main is 7976eae (the original plan). Product changes remain uncommitted. The full web gate subsequently recorded 17 passed, 0 failed, 1 POSIX-only check not run, including 289 unit and 12 browser tests. This correction changes documentation only: eleven known runtime/dependency cuts are mapped, the separation sequence precedes installer expansion, and the installer draft is deferred. Complete application-source origin and live parity remain unresolved.",
   "target_design": "One Svelte product, one owned Rust application API, shared application authorization and persistence, PostgreSQL baseline and FoundationDB scale option, all existing capabilities retained, upstream private contracts retired, and individually justified source/dependency separation.",
   "changes": [
     "Rewrite ROADMAP.md with ordered packages, exact implementation boundaries, capability coverage, acceptance evidence and an immediate next task.",
@@ -64,8 +77,8 @@
     "No edits to generated provenance or capability statuses without corresponding implementation evidence."
   ],
   "verification": [
-    {"name":"Operating schema","command":"python .ai/machine/organize.py --check","proves":"The new plan record conforms to repository operating schemas.","expected":"All operating records validate.","result":"Passed: 6 modules, 406 lines, 53 documents, 165 events, 62 messages, 135 tools, 44 journal entries."},
-    {"name":"Whole plan coverage","command":"python target/check-alpha-plan.py","proves":"Every capability ledger ID is assigned in ROADMAP, new local plan links resolve, and the dependent policy files point to the current direction.","expected":"All capability IDs covered, no new broken plan links, policy pointers present; unchanged broken references reported separately.","result":"Passed: 46 capability IDs assigned, 19 local links resolved, 7 packages with completion gates and 7 policy pointers. Initial check found pre-existing AGENTS.md -> CONTRIBUTING.md missing; final check reports it explicitly, verified unchanged from HEAD. This document check does not certify runtime parity."},
+    {"name":"Operating schema","command":"python .ai/machine/organize.py --check","proves":"The new plan record conforms to repository operating schemas.","expected":"All operating records validate.","result":"Correction validated: 6 modules, 406 lines, 54 documents, 165 events, 62 messages, 135 tools, 44 journal entries."},
+    {"name":"Whole plan coverage","command":"python target/check-alpha-plan.py","proves":"Every capability ledger ID is assigned in ROADMAP, new local plan links resolve, and the dependent policy files point to the current direction.","expected":"All capability IDs covered, no new broken plan links, policy pointers present; unchanged broken references reported separately.","result":"Correction passed: 46 capability IDs assigned, 20 local links resolved, 7 packages with completion gates and 7 policy pointers. Pre-existing AGENTS.md -> CONTRIBUTING.md remains reported, unchanged from HEAD. Known runtime callers were inspected for D1-D11; this document check does not certify source ownership or runtime parity."},
     {"name":"Patch hygiene","command":"git diff --check","proves":"The documentation and retained in-progress work introduce no whitespace errors.","expected":"Exit zero.","result":"Passed; Git reported line-ending conversion warnings but no whitespace errors."}
   ],
   "status":"implemented"

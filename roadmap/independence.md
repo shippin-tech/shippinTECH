@@ -6,9 +6,77 @@ new replacements. Each actual replacement records files, baseline behavior, test
 and the removal commit. Missing test evidence means unverified, not automatically
 unwritten: the earlier squashed-baseline classification cannot establish authorship.
 
+**History gate first:** [the reconciliation plan](reconciliation/README.md) covers
+all available branches, checkpoint refs, dropped stashes and stored commits. The
+pre-reset development tip and public baseline have identical trees. Existing own
+implementations must be retained. Historical name/header changes are separately
+identified, and changed or removed behavior has a review queue. D1-D11 start only
+after that reconciliation and the owner's implementation freeze have been resolved.
+
 Measured inventory: [PROVENANCE.md](../PROVENANCE.md). Rules: [REGRESSION.md](../REGRESSION.md). A replacement
 is written from the published specification and the product's own requirements. The original is the baseline to
 compare against, not text to be paraphrased; it stays until the oracle passes and goes in its own commit.
+
+## Remaining runtime dependency map — inspected 2026-11-21
+
+This is the immediate engineering cut, before installer expansion. Paths below are
+active source references inspected in the current tree. The existence of an own
+implementation does not prove that every old caller uses it or that it has full
+behavior parity. Each row states the connection still required. All rows are open
+until the listed workflow passes on the candidate.
+
+Paths in the old-caller column are relative to `crates/`. The replacement column
+names existing implementation, or explicitly says when the shared replacement is
+not present. These are work boundaries, not instructions to copy old implementations.
+
+| Cut | Old caller / dependency still present | Existing shippinTECH implementation and remaining work | Required proof before removal |
+| --- | --- | --- | --- |
+| D1: startup and feature configuration | `common/src/config/mod.rs`, `common/src/enterprise/{config,mod,license}.rs`, `common/src/lib.rs` | Add owned feature configuration that initializes the existing shippin modules independently. Currently a failed license parse downgrades data/blob/memory stores, sets metrics/tracing to None and clears directories. Replace that coupling; do not simply return true from the edition check | Boot and reload configured PostgreSQL plus replica/composite configurations with directories, metrics and tracing intact; unsupported/malformed configuration still fails clearly. Repeat affected behavior in the FDB profile |
+| D2: account creation, tenant permissions and quotas | `common/src/cache/directory.rs`, `common/src/auth/{authentication,permissions}.rs`, `common/src/storage/quota.rs`, `jmap/src/registry/mapping/principal.rs` | Reuse `common/src/shippin/{orgs,sso,provisioning}.rs` and own HTTP org/provisioning routes. Connect domain-directory lookup and provisioning; preserve tenant permissions and byte/account quotas while removing licensed-account limits. Existing organisation management alone is not proof of domain-directory/tenant parity | `org.spec.ts`, `people.spec.ts`, `sso.spec.ts`, `verify_v1.py`, directory/system suites; cross-tenant reads/writes denied, quotas enforced, both internal and configured external directory account paths exercised |
+| D3: telemetry and alerts | `common/src/enterprise/alerts.rs`, `common/src/manager/boot.rs`, `common/src/cache/reload.rs`, `common/src/telemetry/metrics/prometheus.rs`, `services/src/task_manager/{scheduler,maintenance,index}.rs`, `http/src/api/{mod,telemetry}.rs` | Reuse `common/src/shippin/{stats,trace_history}.rs`, `http/src/shippin/{stats,trace,alerts}.rs`, `services/src/alerts.rs`. Unify collector/retention/maintenance callers and permission checks; remove the old renewal task only after feature scheduling is independent. Preserve Prometheus counters, gauges and histograms | `dashboard.spec.ts`, `tracing.spec.ts`, `alerts.spec.ts` plus metrics export, retention and reload checks. One event produces the intended history/alert, not duplicates; all supported metrics remain available |
+| D4: masked-address routing | `common/src/{cache/principals,network/mta}.rs`, `common/src/enterprise/masked.rs`, `jmap/src/registry/mapping/masked_email.rs` | Reuse `common/src/shippin/masks.rs` and `http/src/shippin/masked.rs`. Reconcile recipient resolution and MTA routing with the own mask store. Existing own HTTP CRUD is not enough to remove the old address parser/resolver | `masked.spec.ts`, SMTP recipient/delivery tests; create, resolve, deliver, disable, delete and limits under the same own address model; any baseline sending/reply behavior gets an explicit test |
+| D5: deletion and recovery | `services/src/task_manager/index.rs`, `jmap/src/registry/mapping/task.rs`, enterprise retention fields | Reuse `common/src/shippin/recover.rs`, `email/src/message/recover.rs`, `http/src/shippin/recover.rs`. Connect archive-on-delete, account deletion/cancellation, retention and purge jobs. Retain the full supported recoverable object set | `recover.spec.ts` plus delete/purge/restart tests; recovered content, identities and ACLs match fixtures; deletion cannot silently bypass retention |
+| D6: calendar templates, RSVP and branding | `services/src/task_manager/{alarm,imip}.rs`, `http/src/request.rs`, `common/src/enterprise/mod.rs` | Own calendar template overrides are already called by alarm/imip; remove old enterprise fallbacks while preserving default templates. Reuse `common/src/shippin/{calendar_templates,brand}.rs` and own HTTP routes; map RSVP and logo callers to the own product surfaces | `calendar-templates.spec.ts`, `calendar.spec.ts`, `brand.spec.ts`; custom and default reminder/invitation bodies, RSVP, domain branding and permission refusals |
+| D7: AI classification and script prompts | `spam-filter/src/analysis/llm.rs`, `common/src/scripts/plugins/llm_prompt.rs`, `common/src/enterprise/llm.rs` | Reuse `common/src/shippin/ai.rs` and service keys. The old callers still read `core.enterprise` for models/configuration. Implement equivalent named-model selection, prompt parameters, response interpretation and permissions through the own provider layer | `assistant.spec.ts` is only part of the proof. Add actual spam classification and Sieve prompt workflows, permission denial, provider error/timeout and disabled-provider cases; no echo-test-only completion |
+| D8: SCIM and product capability reporting | `scim/src/auth.rs`, `http/src/request.rs`, `http/src/auth/permissions.rs`, `jmap/src/registry/mod.rs` | Own `http/src/shippin/provisioning.rs` exists. Reconcile the old SCIM handler and own endpoint by behavior; preserve all supported filters/operations before retiring either path. Replace edition labels/object gates with actual permissions and feature availability | `scim.spec.ts`, SCIM/system suites, UI permission cases; admin/user/tenant boundaries and required provisioning operations; the known eq-only own endpoint is not automatically full protocol parity |
+| D9: storage composition | `common/src/config/mod.rs`, `store/src/lib.rs`, `store/src/backend/composite/`, backend feature manifests | Keep PostgreSQL, FoundationDB and existing backend options. Own the application selection/configuration and remove edition-triggered downgrades. Source provenance of composite implementations is a separate replacement decision, not resolved by enabling them | Primary/replica and shard reads/writes, error/recovery paths, tenant quotas and backend feature matrix. No capability difference between self-hosted and managed-hosted builds |
+| D10: admin API/schema | `http/src/api/registry_rest.rs`, `jmap/src/registry/{get,query,set}.rs`, `registry/src/schema/`, `resources/schema/schema.json.gz` | The Svelte client exists; the server still constructs private JMAP requests. Own schema inputs and generators, implement direct Rust application operations and move UI/MCP consumers. Replace generated artifacts from owned sources; editing generated output alone is not closure | Contract generation from clean checkout, CRUD/action/security/patch/ETag tests, active private method callers removed, old private routes unavailable, standard protocols still pass |
+| D11: filter language/runtime | `sieve-rs` in `common`, `email`, `jmap`, `managesieve`, `smtp` and `tests` manifests | Independent runtime is not present in this tree. Implement the specification below, covering user filtering AND MTA-stage scripts/functions/plugins. Do not remove filtering or swap in a reduced editor/runtime | Full S1 oracle below: compile errors/positions, all supported extensions, action effects, delivery, ManageSieve/JMAP, fuzz and performance fixtures; then remove the dependency |
+
+The first implementation boundary is **D1 together with its D2/D3/D9 callers**:
+own feature initialization must preserve the configured capability graph. This is
+not permission to disable the remaining D4–D8 paths. Port those into the existing
+implementations in the table, with their tests, before removing the old module.
+D10 owns the application contract; D11 closes a distinct third-party runtime
+dependency. None of these tasks is fulfilled by changing product names or headers.
+
+### What is already established and what is not
+
+- Existing Svelte and own Rust implementations are real source in the repository;
+  they are reuse targets, not a reason to commission their rewrites again.
+- The pending People/API consumer changes passed 289 unit tests and 12 mocked
+  browser tests in the full web run. They remain uncommitted and live-unverified.
+- The failing license stub is a concrete runtime coupling. Removing that coupling
+  is required, but does not establish authorship of the rest of the Rust engine.
+- The squashed provenance inventory cannot tell how much pre-baseline code was
+  already independently rewritten. The exact remaining application-source rewrite
+  count is unresolved. No percentage threshold or "just rename it" completion is
+  part of this plan.
+
+### Application-source closure record required before an independence claim
+
+For every shipped application file/generated artifact, the existing provenance
+ledger must record: path, origin evidence, retain/replace decision, replacement
+path when required, capability IDs, tests/results and removal commit. Classify
+confirmed existing own code as retained; do not infer origin from a folder name.
+Use repository history, original source comparison and concrete authorship records.
+Unresolved rows stay unresolved rather than turning into a blanket whole-crate
+rewrite. An exact historical fork revision helps that comparison but does not block
+the known D1–D11 work. No waiver answer is requested for these engineering tasks.
+
+**Separation completion requires both:** D1–D11 closed with no feature loss, and
+every shipped application-source row resolved. The former is operational removal
+of known dependencies; it does not substitute for the latter.
 
 ## Minimal replacement decisions
 

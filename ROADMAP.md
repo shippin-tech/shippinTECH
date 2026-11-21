@@ -45,11 +45,15 @@ flowchart TD
 ## 2. Verified starting point
 
 This table records observations from this session, not a claim of alpha completion.
+The [history reconciliation plan](roadmap/reconciliation/README.md) now accounts for
+every available branch, checkpoint, dropped stash and intermediate commit. Its
+source-based review gate precedes all implementation packages below.
 
 | Item | Observed state |
 | --- | --- |
-| Main | Local and remote `main` both at `a99915375d94081b17484ce4a652b0e04dff9194` before this planning change. |
-| Other remote branch | `cursor/production-deploy-parity-c403` at `b09dbc3` is **8 commits behind main, 0 unique commits** (`git rev-list --left-right --count`). Its commits are already in main; no merge is required. No branch was deleted. |
+| Main | Audited local and remote `main` both at `7976eae9a96bb3034972dd49a7aea77221f67f32`. |
+| Other remote branch | `cursor/production-deploy-parity-c403` at `b09dbc3` is **9 commits behind audited main, 0 unique commits**. Live remote heads verified; no merge is required. No branch was deleted. |
+| Historical continuity | Recovered development tip `6c4e00f` and public root `6693b60` have the exact same tree. All 252 stored commits are covered by 53 source records, including 32 checkpoint refs and both dropped stashes. Earlier removals and changed versions have explicit review packets; full behavioral absorption remains open. |
 | Pending work | Five tracked UI files plus new `ui/test/team-api.test.ts` and its plan record. This work is not committed or deployed. No Rust/storage edits are pending from this session. |
 | UI checks | `npm test`: **41 files, 289 tests passed** after the People/API boundary changes. Svelte check passed with 0 errors/warnings before the final boundary guard; rerun it in A0. |
 | Main CI | [Check for a999153](https://github.com/shippin-tech/shippinTECH/actions/runs/44843695571) passed. That does not verify the uncommitted candidate. |
@@ -61,6 +65,39 @@ This table records observations from this session, not a claim of alpha completi
 | Source accounting | `PROVENANCE.md` compares a squashed baseline. Its roughly 96% Rust classification is **not proof of upstream authorship or a reliable estimate of remaining rewrite work**. Preserve already rewritten work while resolving actual origins. |
 
 ## 3. Execution order and completion gates
+
+**H0 — reconcile existing work before any new product code.** Follow
+[R0-R8](roadmap/reconciliation/README.md): every source has a disposition and every
+non-identical historical version has a review packet. Resolve retained equivalents
+and necessary recovery before resuming implementation. Do not merge whole snapshots
+or treat changed/absent historical paths as automatically superseded. The owner's
+coding freeze remains in force; this plan is not permission to start coding.
+
+**Priority correction after the owner's stop instruction:** the package IDs below
+are stable references, not numeric execution order. Installation work does not
+establish source independence. The separation path is:
+
+1. After H0 closes, use the [remaining dependency map](roadmap/independence.md) to connect each old
+   runtime caller to existing shippinTECH code and name missing behavior. That map
+   is required before resuming product edits; known caller paths are recorded now.
+2. Once implementation resumes, commit the already-tested A0 consumer diff with its
+   live limitation stated. Execute **A2**: complete the existing feature ports and
+   eliminate runtime reliance on old entitlement/configuration paths. Use only the
+   minimal PostgreSQL test setup required to exercise them; do not expand installers.
+3. Execute **A3**: own the schema/generator and direct Rust application operations,
+   move consumers together, then remove private JMAP dispatch. Finish obsolete A0
+   private-call helpers as part of this cutover.
+4. Close **A5** alongside those ports: record source decisions per actual component,
+   retain existing own work, replace Sieve and other confirmed remaining inherited
+   application components. A5 is a required gate, not a later research bucket.
+5. **A4** supplies full feature/protocol proof throughout each cutover. No missing
+   baseline capability is deferred merely because its old route can be removed.
+6. Complete **A1** self-host installation and **A6** whole-product qualification
+   after the separation work is closed. Managed hosting runs that same product.
+
+This order supersedes the previous "A0, then installer" next-task instruction.
+PostgreSQL-first, FoundationDB scaling and storage versatility remain requirements.
+No claim that all remaining code is a small port is established by the current audit.
 
 Work on `main`, with bounded commits and their evidence. No PRs, release tags or
 unrelated refactors. Each package ends with a reviewable result and an updated
@@ -133,7 +170,8 @@ of that cutover. Preserve real role, tenant, abuse and quota limits. Merely maki
 
 **Done:** every remaining old feature consumer has an owned replacement and passing
 behavior evidence. No license stub, renewal task or upstream entitlement is needed
-to exercise the supported features. Reuse historical F0–F11 tests, rerun against A1.
+to exercise the supported features. Reuse historical F0–F11 tests and rerun on the
+candidate PostgreSQL test fixture; full installer packaging is not a prerequisite.
 
 ### A3 — Own the Rust contract and remove private JMAP dispatch
 
@@ -185,7 +223,9 @@ Produce a per-file/per-component decision: **existing shippinTECH work: keep;
 permitted dependency: retain with notices; confirmed remaining inherited application
 implementation: replace; uncertain origin: unresolved**. Validate earlier rewrites
 before adding them to the replacement queue. A squashed commit or path name alone
-cannot decide this. This accounting runs alongside A2–A4; it must not block A1.
+cannot decide this. This accounting runs alongside A2–A4; it must not delay the
+already identified D1–D11 work in the separation map, and must close before the
+finished product is described as independent.
 
 The executable replacement order is: owned feature wiring (A2), private application
 contracts/schema (A3), filtering runtime where still required, then remaining mail,
@@ -289,10 +329,17 @@ control plane.
 
 ## 6. Immediate next task and reporting rule
 
-**Next implementation task: A0.** Finish the pending consumer changes, remove the
-obsolete private-call builders, run the full web gate and commit that bounded result
-to main. Then execute A1: PostgreSQL default install and a real candidate baseline.
-No architecture selection or waiver answer is needed from the owner to start.
+**Current state: product implementation stopped at the owner's instruction.**
+The immediate work is H0's R2-R7 source/behavior reconciliation, using the complete
+historical-version queue. R1's recovered stash contents are already accounted for;
+no stash application is required. The next implementation task, after reconciliation
+and resumption, is the existing consumer checkpoint followed
+by the A2 runtime cutover, starting at `crates/common/src/config/mod.rs` and its
+dependencies listed in the separation map. The first result must preserve configured
+stores, directories, metrics and tracing under owned feature configuration, with
+working capability callers and tests. Removing the license check alone is insufficient.
+Installer expansion is not the next task. No architecture selection or waiver answer
+is needed to define this work.
 
 Each completion report contains: commit, files/behavior changed, commands/results,
 current image/backend when applicable, and exact remaining blockers. Claims about

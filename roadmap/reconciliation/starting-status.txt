@@ -1,0 +1,13 @@
+﻿ M .ai/modules/plans/data/2026-11-21-alpha-execution-map.json
+ M ROADMAP.md
+ M roadmap/independence.md
+ M ui/src/lib/adapter/jmap.ts
+ M ui/src/lib/adapter/registry-facade.ts
+ M ui/src/lib/contract/registry.ts
+ M ui/src/lib/shippin/people/team.ts
+ M ui/test/registry-facade.test.ts
+?? .ai/modules/plans/data/2026-11-21-history-reconciliation.json
+?? .ai/modules/plans/data/2026-11-21-people-api-cutover.json
+?? .ai/modules/plans/data/2026-11-21-postgres-self-host.json
+?? roadmap/reconciliation/
+?? ui/test/team-api.test.ts

@@ -1,0 +1,36 @@
+{
+  "schema_version":"1.0",
+  "id":"2026-11-21-history-reconciliation",
+  "title":"Reconcile every available shippintech branch, stash and snapshot before new code",
+  "costar":{"context":"The owner requires planning from all existing work in this repository. October and Devagotchi are explicitly excluded.","objective":"Record every current ref, historical PR head, recoverable stash and local commit, compare their content with main and author the absorption queue before product implementation resumes.","style":"Evidence-led ledger with explicit unresolved rows.","tone":"Direct.","audience":"Owner and implementers.","response":"Repository-scoped reconciliation evidence and an updated existing roadmap."},
+  "sources":[
+    {"kind":"code","ref":"ROADMAP.md"},
+    {"kind":"code","ref":"roadmap/baseline-audit.md"},
+    {"kind":"code","ref":"roadmap/independence.md"},
+    {"kind":"code","ref":".ai/modules/plans/SKILL.md"},
+    {"kind":"code","ref":".ai/modules/plans/data/2026-11-21-alpha-execution-map.json"},
+    {"kind":"code","ref":"roadmap/reconciliation/README.md"},
+    {"kind":"code","ref":"roadmap/reconciliation/source-summary.csv"},
+    {"kind":"code","ref":"roadmap/reconciliation/commit-changes.csv"},
+    {"kind":"code","ref":"roadmap/reconciliation/recorded-renames.csv"}
+  ],
+  "concerns":[
+    "The repository has a rewritten root; ancestry alone cannot prove old work is missing or absorbed.",
+    "An empty stash list does not exclude recoverable dropped stash objects.",
+    "Matching blobs prove source content retention, not working runtime behavior or authorship.",
+    "Renamed/header-edited Enterprise code must not be counted as an independent implementation merely because of branding.",
+    "Refs or objects already deleted from all available storage cannot be reconstructed from an audit; coverage must state its available evidence boundary.",
+    "Current working-tree changes must remain untouched and separate from historical reconciliation."
+  ],
+  "context":"Documentation and read-only Git inspection only. No product edits, merges, stash application, cherry-picks, branch deletion, cleanup or deployment. Neighboring repositories are excluded from this audit.",
+  "current_state":"Audited main is 7976eae. Live remote heads verified. All 40 refs and 252 stored commits are accounted for through 53 source records with zero uncovered commits. The recovered pre-reset development tip 6c4e00f and public root 6693b60 have identical trees. Both dropped stashes have their content retained. All 21352 intermediate file-change records are captured; 3193 distinct non-identical review units and 152 absent historical paths have assigned reconciliation work. 101 recorded server/UI moves establish 82 missing paths' destinations. Behavioral absorption and source independence remain open; this completed deliverable is planning and evidence only.",
+  "target_design":"One ledger accounts for every available source head and commit, separates exact content retention from changed/missing content, and assigns unresolved work to explicit reconciliation packets before the existing dependency-cut plan proceeds.",
+  "changes":["Generate metadata-only source/ref/commit and content-comparison CSV evidence in roadmap/reconciliation/.","Inspect missing and changed product paths, including the tracked and untracked components of both recovered stashes.","Update the existing roadmap with the reconciliation gate and source-based integration sequence; preserve all current working files."],
+  "boundaries":["No new product code or separate competitor project.","No source content or credentials copied out of stashes into the working product.","No claim that all historical behavior or source ownership is verified by metadata comparisons."],
+  "verification":[
+    {"name":"Inventory completeness","command":"Compare ledger counts and IDs against git for-each-ref, git cat-file --batch-all-objects and recovered stash parent trees","proves":"Every locally available ref/commit and known PR/stash source has a ledger entry.","expected":"No missing available reference or commit IDs.","result":"Passed: 40 refs, 53 source/disposition records, 252 stored commits, zero uncovered commits. Every non-identical intermediate change maps to one of 3193 review items; all 152 absent paths have individual planning rows. Tree equality and both stash/index comparisons independently passed. Local report links resolve."},
+    {"name":"Product freeze","command":"Compare git diff and untracked product file hashes before and after the documentation audit","proves":"The audit did not mutate product code or apply old work.","expected":"Product changes remain byte-identical to the starting state.","result":"Passed: all six starting product files retain their SHA256 hashes and the product change path set is unchanged. No product files staged or integrated by this audit."},
+    {"name":"Operating records","command":"python .ai/machine/organize.py --check; git diff --check","proves":"Plan metadata and documentation conform to repository checks.","expected":"Validation passes; unavailable checks remain explicitly unverified.","result":"Passed using installed python3.15 outside the sandbox after interpreter startup was blocked: 6 modules, 406 lines, 55 documents, 165 events, 62 messages, 135 tools, 44 journal entries. Existing whole-roadmap validator passed 46 capability IDs, 23 local links, 7 implementation package gates and 7 policy pointers. Pre-existing AGENTS link to removed CONTRIBUTING.md remains identified. git diff --check passed; no product runtime tests rerun for documentation."}
+  ],
+  "status":"implemented"
+}
