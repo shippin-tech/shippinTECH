@@ -18,6 +18,97 @@ use std::str::FromStr;
 use store::write::now;
 use types::id::Id;
 
+#[tokio::test]
+async fn system_domain_bootstrap_is_durable_and_idempotent() {
+    use crate::utils::{storage::build_data_store, temp_dir::TempDir};
+    use common::manager::system_domain::{ensure_system_domain, seed_system_identity, SYSTEM_DOMAIN};
+    use registry::schema::structs::{Domain, SystemSettings};
+    use store::{RegistryStore, Store};
+    let temp = TempDir::new("system-domain-bootstrap", true);
+    let path = temp.path.to_string_lossy().to_string();
+    let backend = std::env::var("STORE").unwrap_or_else(|_| "Sqlite".into());
+    let store = Store::build(build_data_store(&backend, &path).await).await.unwrap();
+    store.create_tables().await.unwrap();
+    crate::utils::cleanup::store_destroy(&store).await;
+    let registry = RegistryStore::new(&path, store.clone(), "mail.example.test".into(), 1, None).await;
+    seed_system_identity(&registry).await.unwrap();
+    let id = ensure_system_domain(&registry).await.unwrap();
+    let settings = registry.object::<SystemSettings>(Id::singleton()).await.unwrap().unwrap();
+    assert_eq!(settings.default_domain_id, id);
+    assert_eq!(registry.object::<Domain>(id).await.unwrap().unwrap().name, SYSTEM_DOMAIN);
+    drop(registry);
+    drop(store);
+    let store = Store::build(build_data_store(&backend, &path).await).await.unwrap();
+    let reopened = RegistryStore::new(&path, store, "mail.example.test".into(), 1, None).await;
+    seed_system_identity(&reopened).await.unwrap();
+    assert_eq!(ensure_system_domain(&reopened).await.unwrap(), id);
+    assert_eq!(reopened.count_object(ObjectType::Domain).await.unwrap(), 1);
+    assert_eq!(reopened.object::<SystemSettings>(Id::singleton()).await.unwrap().unwrap(), settings);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn system_domain_root_provisions_mail_without_becoming_a_mailbox() {
+    use crate::utils::{account::Account as TestAccount, server::TestServerBuilder};
+    use common::{auth::AuthRequest, manager::system_domain::{ensure_system_domain, ROOT_ACCOUNT}, network::RcptResolution};
+    use registry::schema::enums::Permission;
+
+    let test = TestServerBuilder::new("system-domain-lifecycle").await
+        .with_http_listener(18898).await.build().await;
+    let recovery = test.account("admin");
+    let registry = test.server.registry();
+    let system_id = ensure_system_domain(registry).await.unwrap();
+    registry.set_setup_key(Some(("synthetic setup fixture".into(), now() + 600)));
+    let count_before = registry.count_object(ObjectType::Domain).await.unwrap();
+    let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build().unwrap();
+    let password = "independent system administrator fixture";
+    let response = client.post("https://127.0.0.1:18898/api/v1/setup/admin")
+        .basic_auth(recovery.name(), Some(recovery.secret()))
+        .json(&json!({"password":password})).send().await.unwrap();
+    assert_eq!(response.status(), 200, "root setup failed");
+    assert_eq!(response.json::<serde_json::Value>().await.unwrap()["email"], ROOT_ACCOUNT);
+    assert!(registry.setup_key().is_none());
+    assert_eq!(registry.count_object(ObjectType::Domain).await.unwrap(), count_before);
+
+    let auth = |name: &str| AuthRequest::from_plain(name, password, 0, "127.0.0.1".parse().unwrap());
+    let token = test.server.authenticate(&auth(ROOT_ACCOUNT)).await.unwrap();
+    let root_id = Id::from(token.account_id());
+    assert_eq!(test.server.authenticate(&auth("root")).await.unwrap().account_id(), token.account_id());
+    for permission in [Permission::ImapAuthenticate, Permission::EmailSend, Permission::EmailReceive,
+        Permission::Pop3Authenticate, Permission::SieveAuthenticate] {
+        assert!(!token.has_permission(permission));
+    }
+    assert!(matches!(test.server.rcpt_resolve(ROOT_ACCOUNT, true, 0).await.unwrap(), RcptResolution::UnknownRecipient));
+    let mut root = TestAccount::new(ROOT_ACCOUNT, password, &[], "Root", root_id);
+    root.http_listener_port = 18898;
+
+    // Root creates a normal mail user with send/receive rights it cannot exercise itself.
+    let user = root.create_user_account("reader@independent.test", "normal mail account fixture", "Reader", &[], vec![]).await;
+    let user_token = test.server.authenticate(&AuthRequest::from_plain(user.name(), user.secret(), 0, "127.0.0.1".parse().unwrap())).await.unwrap();
+    assert!(user_token.has_permission(Permission::EmailSend));
+    let mail_domain = root.find_or_create_domain("independent.test").await;
+    root.registry_update_object_expect_err(ObjectType::Domain, system_id, json!({"name":"stolen.test"})).await.assert_type(SetErrorType::Forbidden);
+    root.registry_destroy_object_expect_err(ObjectType::Domain, system_id).await.assert_type(SetErrorType::Forbidden);
+    root.registry_update_object_expect_err(ObjectType::Domain, mail_domain, json!({"aliases":{"system.local":true}})).await.assert_type(SetErrorType::Forbidden);
+    root.registry_update_object_expect_err(ObjectType::Account, root_id, json!({"domainId":mail_domain.to_string()})).await.assert_type(SetErrorType::Forbidden);
+    root.registry_update_object(ObjectType::SystemSettings, Id::singleton(), json!({"defaultDomainId":system_id.to_string()})).await;
+    root.reload_settings().await;
+    {
+        use common::BuildServer;
+        let current = test.server.inner.build_server();
+        assert_eq!(current.core.email.default_domain_name, "system.local");
+        assert_eq!(current.mail_domain_name(), current.core.network.server_name);
+        assert_ne!(current.mail_domain_name(), "system.local");
+        assert_eq!(current.authenticate(&auth("root")).await.unwrap().account_id(), token.account_id());
+    }
+    root.registry_update_object_expect_err(ObjectType::SystemSettings, Id::singleton(), json!({"defaultDomainId":mail_domain.to_string()})).await.assert_type(SetErrorType::Forbidden);
+
+    root.registry_destroy(ObjectType::Account, [user.id()]).await.assert_destroyed(&[user.id()]);
+    root.registry_destroy(ObjectType::Domain, [mail_domain]).await.assert_destroyed(&[mail_domain]);
+    assert_eq!(test.server.authenticate(&auth(ROOT_ACCOUNT)).await.unwrap().account_id(), token.account_id());
+    assert!(registry.object::<registry::schema::structs::Domain>(system_id).await.unwrap().is_some());
+    test.shutdown();
+}
+
 pub async fn test(test: &TestServer) {
     println!("Running Authentication tests...");
 
@@ -473,6 +564,9 @@ async fn install_defects_short_names_route_without_cross_account_fallback() {
     assert!(test.server.authenticate(&auth("absent", first.secret())).await.is_err());
 
     admin.registry_destroy(ObjectType::Account, [first.id(), second.id(), default.id(), group.id()]).await;
+    // Cleanup needs the task worker running. These auth fixtures run with
+    // shippin.tech_KEEP_DELETED_DAYS=0, so deletion is due immediately.
+    tokio::time::timeout(std::time::Duration::from_secs(30), test.cleanup())
+        .await.expect("authentication fixture cleanup did not finish");
     test.shutdown();
-    test.cleanup().await;
 }

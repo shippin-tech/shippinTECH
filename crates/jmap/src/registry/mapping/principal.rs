@@ -35,6 +35,28 @@ pub async fn validate_account(
     mut account: &mut Account,
     old_account: AccountUpdate<'_>,
 ) -> ValidationResult {
+    if let Some(system) = server.domain(common::manager::system_domain::SYSTEM_DOMAIN).await? {
+        let (domain_id, aliases, allowed_system_identity) = match &*account {
+            Account::User(user) => (user.domain_id, &user.aliases,
+                matches!(user.roles, registry::schema::structs::UserRoles::Admin)
+                    && user.member_tenant_id.is_none() && user.member_group_ids.is_empty()
+                    && user.aliases.is_empty()),
+            Account::Group(group) => (group.domain_id, &group.aliases, false),
+        };
+        let was_system_identity = match old_account {
+            AccountUpdate::Update(Account::User(old)) => old.domain_id.document_id() == system.id,
+            AccountUpdate::Update(Account::Group(old)) => old.domain_id.document_id() == system.id,
+            _ => false,
+        };
+        if (domain_id.document_id() == system.id && !allowed_system_identity)
+            || (was_system_identity && domain_id.document_id() != system.id)
+            || aliases.iter().any(|alias| alias.domain_id.document_id() == system.id)
+        {
+            return Ok(Err(SetError::forbidden().with_description(
+                "System identities must remain independent administrators without tenant membership, groups or mail aliases. The system domain cannot host mail accounts.",
+            )));
+        }
+    }
     // SPDX-SnippetBegin
     // : >
     // 

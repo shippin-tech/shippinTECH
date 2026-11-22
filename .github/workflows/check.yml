@@ -127,7 +127,20 @@ jobs:
       - name: Short-name authentication and account isolation
         env:
           STORE: Sqlite
+          shippin.tech_KEEP_DELETED_DAYS: '0'
         run: cargo test -p tests --locked --no-default-features --features sqlite install_defects_short_names -- --nocapture
+      - name: System domain and root administrator separation
+        env:
+          STORE: Sqlite
+        run: |
+          cargo test -p common --locked --lib system_domain
+          cargo test -p tests --locked --no-default-features --features sqlite system_domain -- --nocapture
+      - name: PostgreSQL bootstrap and administrator lifecycle
+        env:
+          STORE: PostgreSql
+          shippin.tech_KEEP_DELETED_DAYS: '0'
+          RUST_MIN_STACK: '16777216'
+        run: cargo test -p tests --locked --no-default-features --features sqlite,postgres system::authentication -- --nocapture --test-threads=1
 
   # Pre-release there are no pull requests: main takes every change and this run is the gate.
   # A red run is loud (annotation, summary, the pusher's failure email) and is fixed forward on main.

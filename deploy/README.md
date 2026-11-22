@@ -92,8 +92,8 @@ key:      <24 characters>
 ```
 
 Open `https://mail.example.com/login`, enter `admin`, then the key. The only
-page you can reach is **Create your administrator**: choose your own address
-and password. From then on you sign in with that address, and the key no
+page you can reach is **Create your administrator**: set the password for
+`root@system.local`. From then on you sign in with that account, and the key no
 longer works. It also stops working 24 hours after it was made
 (`SETUP_KEY_HOURS` in `server.env` changes that); restart the server then and a
 new key is printed. Until then the key stays the same across restarts; it is
@@ -108,6 +108,18 @@ docker compose --env-file server.env exec mail cat /var/lib/shippin.tech/setup-k
 `RECOVERY_ADMIN=admin:<long password>` in `server.env` is an optional
 break-glass login. When it is set, no setup key is printed and `admin` signs
 in with that password instead. It is not needed for normal operation.
+
+Fresh database setup reserves `system.local` and uses its ID as `defaultDomainId`.
+This identity domain has no automatic DNS, DKIM or certificate provisioning and
+cannot be renamed, assigned to a tenant, aliased or deleted through mail-domain
+management. Root uses local authentication even when an external directory is
+configured. It retains WebAdmin/API administration and permission delegation,
+but cannot authenticate to IMAP, SMTP, POP3 or ManageSieve, send or receive mail.
+Create and verify real mail domains separately for organizations and users;
+their lifecycle does not change the system administrator's identity. Existing
+explicit defaults and administrator accounts are not silently migrated.
+When the identity default is reserved, mail-report expressions (`system('domain')`)
+and alert senders use the configured server hostname instead of `system.local`.
 
 Sign-in accepts full addresses. A short account name keeps its existing
 default-domain directory/account route; if neither is configured there, it resolves a unique

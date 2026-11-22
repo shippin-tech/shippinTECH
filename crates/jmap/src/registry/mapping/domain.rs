@@ -25,6 +25,9 @@ pub(crate) async fn validate_domain(
     old_domain: Option<&Domain>,
     tasks: &mut Vec<Task>,
 ) -> ValidationResult {
+    if common::manager::system_domain::domain_change_is_reserved(domain, old_domain) {
+        return Ok(Err(SetError::forbidden().with_description("The system identity domain is reserved and cannot be changed through mail-domain management.")));
+    }
     let response = if old_domain.is_none() {
         match validate_tenant_quota(set.server, set.access_token, TenantStorageQuota::MaxDomains)
             .await?

@@ -131,6 +131,7 @@ pub struct AccessToken {
 
 #[derive(Debug, Default, Clone)]
 pub struct AccessTokenInner {
+    pub(crate) control_plane_only: bool,
     pub(crate) account_id: u32,
     pub(crate) tenant_id: Option<u32>,
     pub(crate) member_of: TinyVec<[u32; 3]>,

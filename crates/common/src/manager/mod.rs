@@ -16,6 +16,7 @@ pub mod console;
 pub mod defaults;
 pub mod restore;
 pub mod setup_key;
+pub mod system_domain;
 #[cfg(target_os = "linux")]
 pub mod systemd;
 

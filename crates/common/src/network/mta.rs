@@ -36,6 +36,13 @@ use types::id::Id;
 use utils::DomainPart;
 
 impl Server {
+    pub fn mail_domain_name(&self) -> &str {
+        crate::manager::system_domain::mail_domain_name(
+            &self.core.email.default_domain_name,
+            &self.core.network.server_name,
+        )
+    }
+
     pub async fn rcpt_resolve(
         &self,
         rcpt: &str,
@@ -46,6 +53,9 @@ impl Server {
         let Some((local_part, domain_part)) = rcpt.rsplit_once('@') else {
             return Ok(RcptResolution::UnknownDomain);
         };
+        if crate::manager::system_domain::is_system_domain(domain_part) {
+            return Ok(RcptResolution::UnknownRecipient);
+        }
         let Some(domain) = self.domain(domain_part).await? else {
             return Ok(RcptResolution::UnknownDomain);
         };

@@ -541,6 +541,9 @@ impl Server {
         &self,
         domain_name: &str,
     ) -> trc::Result<Option<&Arc<Directory>>> {
+        if crate::manager::system_domain::is_system_domain(domain_name) {
+            return Ok(None);
+        }
     
         #[cfg(feature = "enterprise")]
         if self.core.is_enterprise_edition() {
@@ -595,6 +598,9 @@ impl Server {
     }
 
     pub fn get_directory_for_cached_domain(&self, domain: &DomainCache) -> Option<&Arc<Directory>> {
+        if domain.names.first().is_some_and(|name| crate::manager::system_domain::is_system_domain(name)) {
+            return None;
+        }
     
         #[cfg(feature = "enterprise")]
         if self.core.is_enterprise_edition() {

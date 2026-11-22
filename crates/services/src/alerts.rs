@@ -282,7 +282,7 @@ async fn send_webhook(url: &str, rule: &AlertRule, value: f64, host: &str) {
 }
 
 async fn send_email(server: &Server, rule: &AlertRule, value: f64) {
-    let from = format!("postmaster@{}", server.core.email.default_domain_name);
+    let from = format!("postmaster@{}", server.mail_domain_name());
     let subject = format!("Alert: {}", rule.name);
     let text = format!(
         "{}\n\nThis came from an alert on {}. Change it under Alerts in the portal.\n",

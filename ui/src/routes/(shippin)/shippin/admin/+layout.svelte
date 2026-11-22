@@ -67,8 +67,8 @@
 
 {#if firstRun}
 	<SetupAdmin
-		oncreate={async (email, password) => {
-			const created = await createAdministrator(email, password);
+		oncreate={async (password) => {
+			const created = await createAdministrator(password);
 			mcplEmit('setup.administrator.created', created);
 			// Leave the portal before clearing the session, or the sign-in gate wins the race.
 			await goto(`/login?login_hint=${encodeURIComponent(created)}&admin=1`, { replaceState: true });

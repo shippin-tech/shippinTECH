@@ -1,35 +1,37 @@
-//! First-run setup: turn the printed setup key into a real administrator.
-//!
-//! `GET /api/v1/setup` says whether setup is pending. `POST /api/v1/setup/admin`, called
-//! by someone signed in as "admin" with the setup key, creates the administrator's
-//! domain if needed and the administrator account, then retires the key for good.
+//! First-run setup creates the reserved control-plane administrator and retires
+//! the printed key. Hosted mail domains are configured separately.
 
 use crate::{
     auth::authenticate::Authenticator,
-    panel::{acceptable_password, internal_call, normalize_domain, normalize_local_part, set_created},
+    panel::{acceptable_password, internal_call, set_created},
 };
 use common::{
     Server,
     auth::{AccessToken, RECOVERY_ADMIN_ID},
-    manager::setup_key::retire_setup_key,
+    manager::{
+        setup_key::retire_setup_key,
+        system_domain::{ROOT_ACCOUNT, ensure_system_domain},
+    },
 };
 use http_proto::{HttpRequest, HttpResponse, HttpSessionData, JsonResponse, ToHttpResponse};
 use hyper::{Method, StatusCode};
-use registry::schema::prelude::{ObjectType, Property};
+use serde::Deserialize;
 use serde_json::{Value, json};
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CreateRoot {
+    password: String,
+}
+
 fn reply(status: StatusCode, value: Value) -> trc::Result<HttpResponse> {
-    Ok(JsonResponse::with_status(status, value).no_cache().into_http_response())
+    Ok(JsonResponse::with_status(status, value)
+        .no_cache()
+        .into_http_response())
 }
 
 fn problem(status: StatusCode, code: &str, message: &str) -> trc::Result<HttpResponse> {
     reply(status, json!({ "error": code, "message": message }))
-}
-
-/// Splits "name@domain" into a valid mailbox name and domain.
-pub fn split_admin_email(input: &str) -> Option<(String, String)> {
-    let (local, domain) = input.trim().rsplit_once('@')?;
-    Some((normalize_local_part(local)?, normalize_domain(domain)?))
 }
 
 pub trait SetupApi: Sync + Send {
@@ -51,104 +53,78 @@ impl SetupApi for Server {
         body: Option<Vec<u8>>,
     ) -> trc::Result<HttpResponse> {
         let pending = self.registry().setup_key().is_some();
-        match (path.first().map(String::as_str).unwrap_or_default(), req.method()) {
-            ("", &Method::GET) => reply(StatusCode::OK, json!({ "pending": pending })),
+        match (
+            path.first().map(String::as_str).unwrap_or_default(),
+            req.method(),
+        ) {
+            ("", &Method::GET) => reply(
+                StatusCode::OK,
+                json!({ "pending": pending, "administrator": ROOT_ACCOUNT }),
+            ),
             ("admin", &Method::POST) => {
                 let (_in_flight, access_token) = self.authenticate_headers(req, session).await?;
                 if !pending {
-                    return problem(StatusCode::CONFLICT, "done", "This server already has an administrator.");
+                    return problem(
+                        StatusCode::CONFLICT,
+                        "done",
+                        "This server already has an administrator.",
+                    );
                 }
                 if access_token.account_id() != RECOVERY_ADMIN_ID {
-                    return problem(StatusCode::FORBIDDEN, "notSetup", "Sign in as admin with the setup key first.");
+                    return problem(
+                        StatusCode::FORBIDDEN,
+                        "notSetup",
+                        "Sign in as admin with the setup key first.",
+                    );
                 }
-                let body = body
+                let Some(body) = body
                     .as_deref()
-                    .and_then(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-                    .unwrap_or(Value::Null);
-                let email = body.get("email").and_then(Value::as_str).unwrap_or_default();
-                let password = body.get("password").and_then(Value::as_str).unwrap_or_default();
-                let Some((name, domain)) = split_admin_email(email) else {
-                    return problem(StatusCode::BAD_REQUEST, "invalidEmail", "Enter an address like you@example.com.");
+                    .and_then(|bytes| serde_json::from_slice::<CreateRoot>(bytes).ok())
+                else {
+                    return problem(
+                        StatusCode::BAD_REQUEST,
+                        "invalidRequest",
+                        "Provide the password for the system administrator. Mail domains are configured separately.",
+                    );
                 };
-                if let Err(reason) = acceptable_password(password) {
+                if let Err(reason) = acceptable_password(&body.password) {
                     return problem(StatusCode::BAD_REQUEST, "weakPassword", reason);
                 }
-                create_admin(self, session, &name, &domain, password).await
+                let domain_id = ensure_system_domain(self.registry()).await?;
+                let response = internal_call(self, &AccessToken::new_admin(), session, "x:Account/set", json!({
+                    "create": { "a": {
+                        "@type": "User", "name": "root", "domainId": domain_id.to_string(),
+                        "credentials": { "0": { "@type": "Password", "secret": body.password } },
+                        "roles": { "@type": "Admin" }, "description": "System administrator"
+                    } }
+                })).await?;
+                if let Err(reason) = set_created(&response, "a") {
+                    return problem(StatusCode::BAD_REQUEST, "adminRejected", &reason);
+                }
+                retire_setup_key(self.registry());
+                reply(StatusCode::OK, json!({ "email": ROOT_ACCOUNT }))
             }
             _ => Err(trc::ResourceEvent::NotFound.into_err()),
         }
     }
 }
 
-async fn create_admin(
-    server: &Server,
-    session: &HttpSessionData,
-    name: &str,
-    domain: &str,
-    password: &str,
-) -> trc::Result<HttpResponse> {
-    let token = AccessToken::new_admin();
-    let existing = server
-        .registry()
-        .primary_key(ObjectType::Domain.into(), Property::Name, domain.as_bytes().to_vec())
-        .await?;
-    let (domain_id, created_domain) = match existing {
-        Some(id) => (id.id().to_string(), false),
-        None => {
-            let response = internal_call(
-                server,
-                &token,
-                session,
-                "x:Domain/set",
-                json!({ "create": { "d": { "name": domain, "description": "Server administrator's domain" } } }),
-            )
-            .await?;
-            match set_created(&response, "d") {
-                Ok(created) => (
-                    created.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
-                    true,
-                ),
-                Err(reason) => return problem(StatusCode::BAD_REQUEST, "domainRejected", &reason),
-            }
-        }
-    };
-    let response = internal_call(
-        server,
-        &token,
-        session,
-        "x:Account/set",
-        json!({ "create": { "a": {
-            "@type": "User",
-            "name": name,
-            "domainId": domain_id,
-            "credentials": { "0": { "@type": "Password", "secret": password } },
-            "roles": { "@type": "Admin" },
-            "description": "Server administrator",
-        } } }),
-    )
-    .await?;
-    if let Err(reason) = set_created(&response, "a") {
-        if created_domain {
-            let _ = internal_call(server, &token, session, "x:Domain/set", json!({ "destroy": [domain_id] })).await;
-        }
-        return problem(StatusCode::BAD_REQUEST, "adminRejected", &reason);
-    }
-    retire_setup_key(server.registry());
-    reply(StatusCode::OK, json!({ "email": format!("{name}@{domain}") }))
-}
-
 #[cfg(test)]
-mod tests {
-    use super::split_admin_email;
+mod system_domain_tests {
+    use super::*;
 
     #[test]
-    fn admin_email_is_split_and_checked() {
-        assert_eq!(
-            split_admin_email(" Jesse@Shippin.Tech "),
-            Some(("jesse".to_string(), "shippin.tech".to_string()))
+    fn setup_accepts_only_a_password_not_a_mail_domain_or_identity() {
+        assert!(
+            serde_json::from_value::<CreateRoot>(json!({"password":"example fixture"})).is_ok()
         );
-        assert_eq!(split_admin_email("admin"), None);
-        assert_eq!(split_admin_email("a@localhost"), None);
-        assert_eq!(split_admin_email("bad name@example.com"), None);
+        for request in [
+            json!({}),
+            json!({"password":7}),
+            json!({"password":"example fixture","email":"owner@example.test"}),
+            json!({"password":"example fixture","domainId":"1"}),
+        ] {
+            assert!(serde_json::from_value::<CreateRoot>(request).is_err());
+        }
     }
 }

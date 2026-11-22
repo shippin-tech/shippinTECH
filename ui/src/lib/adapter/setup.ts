@@ -8,14 +8,14 @@ export async function setupPending(): Promise<boolean> {
 	return body.pending === true;
 }
 
-export async function createAdministrator(email: string, password: string): Promise<string> {
+export async function createAdministrator(password: string): Promise<string> {
 	const auth = authorization();
 	if (!auth) throw new Error('sign-in required');
 	const res = await fetch('/api/v1/setup/admin', {
 		method: 'POST',
 		cache: 'no-store',
 		headers: { Authorization: auth, 'Content-Type': 'application/json', Accept: 'application/json' },
-		body: JSON.stringify({ email, password })
+		body: JSON.stringify({ password })
 	});
 	const body = (await res.json().catch(() => ({}))) as { email?: string; message?: string };
 	if (!res.ok || !body.email) throw new Error(body.message || `The server answered ${res.status}.`);

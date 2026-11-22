@@ -426,6 +426,18 @@ impl RegistrySet for Server {
                     // Validate objects
                     let mut tasks = Vec::new();
                     let result = match &mut new_object.inner {
+                        ObjectInner::SystemSettings(settings) => {
+                            let current = self.registry().object::<registry::schema::structs::SystemSettings>(Id::singleton()).await?;
+                            if let Some(current) = current
+                                && current.default_domain_id != settings.default_domain_id
+                                && let Some(domain) = self.domain_by_id(current.default_domain_id.document_id()).await?
+                                && domain.names.first().is_some_and(|name| common::manager::system_domain::is_system_domain(name))
+                            {
+                                Err(SetError::forbidden().with_description("The control-plane default domain cannot be replaced by a mail domain."))
+                            } else {
+                                Ok(Default::default())
+                            }
+                        }
                         ObjectInner::Account(account) => {
                             validate_account(self, access_token, account, modification.as_account())
                                 .await?
@@ -680,6 +692,13 @@ impl RegistrySet for Server {
                                     && object.inner.account_id() != Some(Id::from(set.account_id))))
                         })
                     {
+                        if let ObjectInner::Domain(domain) = &object.inner
+                            && common::manager::system_domain::is_system_domain(&domain.name)
+                        {
+                            set.response.not_destroyed.append(id, SetError::forbidden()
+                                .with_description("The system identity domain cannot be deleted."));
+                            continue;
+                        }
                         match self
                             .registry()
                             .write(RegistryWrite::Delete {

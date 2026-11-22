@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { passwordProblem } from '$lib/panel/model';
 
-	type Props = { oncreate: (email: string, password: string) => Promise<void> };
+	type Props = { oncreate: (password: string) => Promise<void> };
 	let { oncreate }: Props = $props();
 
-	let email = $state('');
 	let password = $state('');
 	let repeat = $state('');
 	let error = $state('');
@@ -13,10 +12,6 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		error = '';
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-			error = 'Enter the address you will sign in with, like you@example.com.';
-			return;
-		}
 		const weak = passwordProblem(password);
 		if (weak) {
 			error = weak;
@@ -28,7 +23,7 @@
 		}
 		busy = true;
 		try {
-			await oncreate(email.trim(), password);
+			await oncreate(password);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'The administrator was not created.';
 		} finally {
@@ -39,11 +34,11 @@
 
 <section class="setup" aria-labelledby="setup-title">
 	<h1 id="setup-title">Create your administrator</h1>
-	<p>You signed in with the server's one-time setup key. Choose the address and password you will use from now on. The setup key stops working as soon as you finish. Next, sign in with your new address and author your keys: the dashboard shows you how.</p>
+	<p>You signed in with the server's one-time setup key. Set the password for your system administrator. The setup key stops working as soon as you finish. Next, sign in and author your service keys.</p>
 	<form onsubmit={submit} novalidate>
-		<label for="setup-email">Your administrator address</label>
-		<input id="setup-email" type="email" autocomplete="username" placeholder="you@example.com" bind:value={email} />
-		<p class="muted">Its domain is added to the server if it is not there yet.</p>
+		<label for="setup-account">System administrator</label>
+		<input id="setup-account" type="text" autocomplete="username" value="root@system.local" readonly />
+		<p class="muted">This account manages the server through WebAdmin and the API. It is not a mailbox. Add your organizations and mail domains separately after signing in.</p>
 		<label for="setup-password">Password</label>
 		<input id="setup-password" type="password" autocomplete="new-password" bind:value={password} />
 		<label for="setup-repeat">Repeat password</label>

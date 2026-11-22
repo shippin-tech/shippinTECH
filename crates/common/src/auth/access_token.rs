@@ -27,6 +27,29 @@ use tinyvec::TinyVec;
 use trc::{AddContext, StoreEvent};
 use types::{acl::Acl, collection::Collection};
 use utils::map::bitmap::{Bitmap, BitmapItem};
+
+#[cfg(test)]
+mod system_domain_tests {
+    use super::*;
+
+    #[test]
+    fn control_plane_admin_can_provision_mail_but_cannot_use_it() {
+        let mut inner = AccessTokenInner::new_admin();
+        inner.account_id = 42;
+        inner.control_plane_only = true;
+        let token = AccessToken { scope_idx: 0, inner: Arc::new(inner) };
+        assert!(token.has_permission(Permission::Authenticate));
+        for permission in [Permission::EmailSend, Permission::EmailReceive,
+            Permission::ImapAuthenticate, Permission::Pop3Authenticate, Permission::SieveAuthenticate]
+        {
+            assert!(!token.has_permission(permission));
+            assert!(token.can_grant_permissions(Permissions::from_permission(&[permission])).is_ok());
+        }
+        let regular = AccessToken::from_permissions(43, [Permission::EmailSend, Permission::Authenticate]);
+        assert!(regular.has_permission(Permission::EmailSend));
+        assert!(regular.can_grant_permissions(Permissions::from_permission(&[Permission::Impersonate])).is_err());
+    }
+}
 use xxhash_rust::xxh3;
 
 impl Server {
@@ -39,6 +62,8 @@ impl Server {
     ) -> trc::Result<AccessTokenInner> {
         match account {
             Account::User(account) => {
+                let control_plane_only = self.domain_by_id(account.domain_id.document_id()).await?
+                    .is_some_and(|domain| domain.names.first().is_some_and(|name| crate::manager::system_domain::is_system_domain(name)));
                 let tenant_id = account.member_tenant_id.map(|t| t.id() as u32);
                 let permissions = self
                     .effective_permissions(
@@ -180,6 +205,7 @@ impl Server {
                 }
 
                 Ok(AccessTokenInner {
+                    control_plane_only,
                     concurrent_imap_requests: self
                         .core
                         .imap
@@ -223,6 +249,7 @@ impl Server {
                     .await?;
 
                 Ok(AccessTokenInner {
+                    control_plane_only: false,
                     concurrent_imap_requests: self
                         .core
                         .imap
@@ -497,6 +524,14 @@ impl AccessToken {
 
     #[inline(always)]
     pub fn has_permission(&self, permission: Permission) -> bool {
+        // System administrators can delegate mail permissions without using mail
+        // protocols themselves. permissions_bits() retains the grantable set.
+        if self.inner.control_plane_only && matches!(permission,
+            Permission::EmailSend | Permission::EmailReceive | Permission::ImapAuthenticate
+            | Permission::Pop3Authenticate | Permission::SieveAuthenticate
+        ) {
+            return false;
+        }
         self.inner
             .scopes
             .get(self.scope_idx)
@@ -557,6 +592,7 @@ impl AccessToken {
                 }
                 let old_inner = &access_token.inner;
                 let inner = AccessTokenInner {
+                    control_plane_only: old_inner.control_plane_only,
                     scopes: scopes.into_boxed_slice(),
                     account_id: old_inner.account_id,
                     tenant_id: old_inner.tenant_id,
@@ -770,6 +806,7 @@ impl AccessToken {
         AccessToken {
             scope_idx: 0,
             inner: Arc::new(AccessTokenInner {
+                control_plane_only: false,
                 account_id,
                 tenant_id: Default::default(),
                 member_of: Default::default(),
@@ -815,6 +852,7 @@ impl AccessTokenInner {
 
     pub fn new_admin() -> Self {
         AccessTokenInner {
+            control_plane_only: false,
             account_id: RECOVERY_ADMIN_ID,
             tenant_id: Default::default(),
             member_of: Default::default(),

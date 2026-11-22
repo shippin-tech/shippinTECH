@@ -80,6 +80,8 @@ async fn insert_safe_defaults(bp: &mut Bootstrap) -> trc::Result<()> {
         return Ok(());
     }
 
+    super::system_domain::seed_system_identity(&bp.registry).await?;
+
     if bp.registry.count_object(ObjectType::MtaQueueQuota).await? == 0 {
         bp.registry
             .write(RegistryWrite::insert(

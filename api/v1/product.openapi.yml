@@ -93,6 +93,9 @@ paths:
                 properties:
                   pending:
                     type: boolean
+                  administrator:
+                    type: string
+                    const: root@system.local
                 required:
                 - pending
       x-proof: ui/e2e-live/first-run.spec.ts
@@ -102,8 +105,9 @@ paths:
       summary: Turn the printed setup key into the first administrator
       tags:
       - Setup
-      description: Creates the administrator's domain if needed, then the administrator account, then
-        retires the setup key for good. Fails with 409 `done` once an administrator exists.
+      description: Creates root@system.local in the reserved bootstrap identity domain and
+        retires the setup key for good. Does not create a hosted mail domain. The administrator
+        uses WebAdmin/API access; mail-protocol use is disabled. Fails with 409 `done` once setup is complete.
       x-auth: Signed in as the setup account (`admin` with the one-time setup key). Any other account
         gets 403 notSetup.
       requestBody:
@@ -113,16 +117,13 @@ paths:
             schema:
               type: object
               properties:
-                email:
-                  type: string
-                  format: email
                 password:
                   type: string
                   format: password
                   writeOnly: true
               required:
-              - email
               - password
+              additionalProperties: false
       responses:
         '200':
           description: The administrator was created and the setup key retired
@@ -145,9 +146,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
       x-proof: ui/e2e-live/first-run.spec.ts
       x-errors:
-      - invalidEmail
+      - invalidRequest
       - weakPassword
-      - domainRejected
       - adminRejected
       - notSetup
       - done

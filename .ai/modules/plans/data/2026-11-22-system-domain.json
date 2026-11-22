@@ -1,0 +1,181 @@
+{
+  "schema_version": "1.0",
+  "id": "2026-11-22-system-domain",
+  "title": "Separate bootstrap administrator identity from hosted mail domains",
+  "costar": {
+    "context": "Owner selected a reserved system domain and independent control-plane administrator.",
+    "objective": "Seed the reserved domain and first root administrator without creating a real mail domain, and protect the boundary through account/domain management.",
+    "style": "Bounded implementation with regression evidence",
+    "tone": "Direct",
+    "audience": "Owner and maintainers",
+    "response": "Committed main changes with unchanged release version and explicit verification limits"
+  },
+  "sources": [
+    {
+      "kind": "code",
+      "ref": "crates/common/src/manager/defaults.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/manager/mod.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/auth/mod.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/auth/access_token.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/auth/authentication.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/network/mta.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/http/src/setup.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/jmap/src/registry/mapping/domain.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/jmap/src/registry/mapping/principal.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/jmap/src/registry/set.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/store/src/registry/write.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/registry/src/schema/structs.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/lib/shippin/admin/SetupAdmin.svelte"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/lib/adapter/setup.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/routes/(shippin)/shippin/admin/+layout.svelte"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/e2e-live/first-run.spec.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "tests/src/system/authentication.rs"
+    },
+    {
+      "kind": "code",
+      "ref": ".github/workflows/check.yml"
+    },
+    {
+      "kind": "code",
+      "ref": "api/v1/product.openapi.yml"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/README.md"
+    },
+    {
+      "kind": "web",
+      "ref": "https://www.iana.org/assignments/special-use-domain-names"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/expr/eval.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/services/src/alerts.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "resources/html-templates/calendar-rsvp.html.min"
+    },
+    {
+      "kind": "code",
+      "ref": "resources/html-templates/calendar-rsvp.html.min.gz"
+    },
+    {
+      "kind": "code",
+      "ref": "resources/html-templates/login.html.min"
+    },
+    {
+      "kind": "code",
+      "ref": "resources/html-templates/login.html.min.gz"
+    }
+  ],
+  "concerns": [
+    "Root must still provision normal mail users: removing its grantable permissions would prevent that, so deny mail use at the token capability boundary while preserving permission delegation checks.",
+    "A reserved domain must not be reassigned, renamed, aliased, deleted or enabled for DNS/certificate automation through general registry APIs.",
+    "Global external authentication directories must not take over system-domain credentials.",
+    "Bootstrap must be idempotent and fail explicitly on a conflicting reserved name without overwriting existing data.",
+    "Fresh installs receive the reserved default; existing explicit defaults and mail accounts are not silently migrated.",
+    "Mail reports and alerts must not use the reserved identity domain as a public sender; system('domain') uses the configured server hostname when the identity default is reserved.",
+    "The pre-existing short-name fixture shut workers down before cleanup and waited on 30-day retention. Run this authentication fixture with zero retention, retain its cleanup assertion, bound its wait, and stop workers afterward; product retention stays unchanged.",
+    "Candidate-image first-run browser, full mail interoperability/recovery, cluster failure recovery and PostgreSQL-to-FoundationDB transfer remain separate qualification requirements; backend integration is not full release readiness."
+  ],
+  "context": "Baseline main 1b39550; no product release/tag changes are authorized.",
+  "current_state": "Setup requires a real address and creates its domain. No protected system domain exists. Account domainId is mandatory.",
+  "target_design": "Persistent bootstrap seeds system.local with manual DNS/DKIM/certificates and sets a new installation's defaultDomainId to it. First-run setup creates root@system.local from a password-only request. Reserved domain is immutable through ordinary management. System identities use local authentication, cannot acquire real-domain aliases or tenant membership, and cannot use SMTP/IMAP/POP3/ManageSieve or receive mail. Root retains account/domain administration and delegation. Real domains remain separately managed tenant data.",
+  "changes": [
+    "Add a reserved-domain bootstrap helper and policy functions with unit tests.",
+    "Enforce reserved domain/account boundaries in registry validation and domain deletion; protect the seeded defaultDomainId.",
+    "Separate system account mail-use restrictions from grantable administration permissions and exclude the system domain from external directory routing/SMTP recipients.",
+    "Replace first-run email selection with a fixed root identity in the existing Svelte setup screen and password-only API.",
+    "Update API/deploy documentation and first-run/integration tests covering root login, permission boundaries and real-domain lifecycle.",
+    "Keep default identity resolution separate from public mail-report/alert sender defaults; preserve existing real default-domain behavior.",
+    "Regenerate stale compressed login/RSVP assets from their existing minified sources after the full HTTP suite exposed old /api routes in the served payloads."
+  ],
+  "boundaries": [
+    "No legacy compatibility layer, real-user deployment, release tag or version change.",
+    "Keep PostgreSQL first, FoundationDB scale, storage versatility and existing mail capabilities for real mail accounts.",
+    "Do not rename/delete existing mail domains or migrate existing administrator identities automatically."
+  ],
+  "verification": [
+    {
+      "name": "Runtime build and unit tests",
+      "command": "cargo test -p common --lib --locked; cargo test -p http@0.16.27 --lib --locked; cargo check -p shippin-tech --locked --no-default-features --features postgres,s3,nats,enterprise",
+      "proves": "Bootstrap policy, request contract and protocol-use/delegation separation compile and behave correctly",
+      "expected": "Relevant tests and application check pass",
+      "result": "Windows: 164 common tests passed; 36 HTTP tests passed after regenerating two stale compressed assets; PostgreSQL/S3/NATS/enterprise application check passed. No Cargo versions or lockfile changes. Logs in ignored target/system-domain-{common-tests,http-tests,postgres-check}.log."
+    },
+    {
+      "name": "Whole web/deploy gate",
+      "command": "python scripts/regression.py --only web",
+      "proves": "Existing UI/contracts/browser/build/deploy checks retain behavior",
+      "expected": "All available checks pass; missing coverage reported",
+      "result": "18 available checks passed, zero failures: 289 UI unit tests, 13 mocked browser tests, typecheck, build, lint, API/brand/registry/MCPL/inventory and deploy checks. Relay is not run by the Windows runner because its permissions assertions require POSIX. Live/image steps omitted, not passed. Evidence roadmap/regression-results.partial.json (ignored). The relay shell suite subsequently passed in Linux Docker (target/system-domain-backend-tests.log); all 19 web/deploy checks now have passing observations across the two environments."
+    },
+    {
+      "name": "Integrated first-run and domain lifecycle",
+      "command": "Linux Docker: RUST_MIN_STACK=16777216 shippin.tech_KEEP_DELETED_DAYS=0 STORE=PostgreSql (then Sqlite) cargo test -p tests --locked --no-default-features --features sqlite,postgres system::authentication -- --nocapture --test-threads=1",
+      "proves": "Reserved bootstrap/default and store reopen; root setup API/key retirement; mail-use/delegation separation; real-domain lifecycle; short-name ambiguity and account isolation on each backend",
+      "expected": "Three tests pass per backend; image-level live browser/protocol/recovery remain explicitly unverified",
+      "result": "Linux Docker, Rust 1.100.0, PostgreSQL 16-alpine: 3 passed, 0 failed in 7.50s; SQLite: 3 passed, 0 failed in 7.93s. Store handles are dropped/reopened before reseeding. First PostgreSQL debug test run overflowed the default worker stack; final run and CI use RUST_MIN_STACK=16777216. Auth fixtures use KEEP_DELETED_DAYS=0 for bounded cleanup, without altering product retention. Log: target/system-domain-backend-tests.log. Protocol checks exercise access-token enforcement and recipient resolution, not independent mail-client socket sessions."
+    },
+    {
+      "name": "Candidate-image qualification remains open",
+      "command": "Run ui/e2e-live/first-run.spec.ts and the relevant deploy/local live protocol/recovery checks on a disposable candidate image",
+      "proves": "Packaged Svelte/Rust first-run and actual protocol behavior, restart/recovery and install integration",
+      "expected": "All applicable live checks pass before claiming candidate readiness",
+      "result": "Not run for this candidate. No claim of whole-product zero regression, release readiness, cluster recovery or PostgreSQL-to-FoundationDB transfer. Product version, release tag and release channel unchanged."
+    }
+  ],
+  "status": "implemented"
+}

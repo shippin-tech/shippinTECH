@@ -9,7 +9,7 @@ const key = process.env.FIRST_RUN_KEY;
 test.skip(!url || !key, 'set FIRST_RUN_URL and FIRST_RUN_KEY to run against a fresh node');
 test.use({ baseURL: url });
 
-const admin = `boss@first-run-${Math.random().toString(16).slice(2, 8)}.test`;
+const admin = 'root@system.local';
 const password = 'First run administrator pw';
 
 test('the setup key leads to creating the administrator, then stops working', async ({ page }) => {
@@ -26,7 +26,9 @@ test('the setup key leads to creating the administrator, then stops working', as
 	});
 	await expect(page.getByRole('navigation', { name: 'Admin' })).toHaveCount(0);
 
-	await page.getByLabel('Your administrator address').fill(admin);
+	await expect(page.getByLabel('System administrator')).toHaveValue(admin);
+	await expect(page.getByLabel('System administrator')).toHaveAttribute('readonly', '');
+	await expect(page.getByText('Its domain is added to the server if it is not there yet.')).toHaveCount(0);
 	await page.getByLabel('Password', { exact: true }).fill(password);
 	await page.getByLabel('Repeat password').fill(password);
 	await page.getByRole('button', { name: 'Create administrator' }).click();

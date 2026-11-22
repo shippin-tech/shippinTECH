@@ -220,7 +220,7 @@ impl<'x, V: ResolveVariable> EvalContext<'x, V, Expression, &mut Vec<CompactStri
                         stack.push(self.core.core.network.server_name.as_str().into())
                     }
                     SystemVariable::Domain => {
-                        stack.push(self.core.core.email.default_domain_name.as_str().into())
+                        stack.push(self.core.mail_domain_name().into())
                     }
                     SystemVariable::NodeId => stack.push(self.core.core.network.node_id.into()),
                     SystemVariable::NodeHostname => {
