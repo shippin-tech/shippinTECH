@@ -1,9 +1,7 @@
 name: ${COMPOSE_PROJECT_NAME:-shippin-test}
 
-# One mail node. With COMPOSE_PROFILES=bundled in server.env the same host also runs
-# FoundationDB, object storage and NATS, each with persistent data, so a clean host
-# needs nothing else. Without it, point S3_*, NATS_ADDRESS and ./fdb.cluster at
-# services you run yourself.
+# One application, with bundled common services and one selected database profile.
+# New installs use bundled,postgres; scale installs use bundled,foundationdb.
 services:
   mail:
     image: ${SHIPPIN_IMAGE:?Set SHIPPIN_IMAGE to a published image digest}
@@ -13,10 +11,12 @@ services:
     restart: unless-stopped
     hostname: ${MAIL_HOSTNAME:?Set a unique MAIL_HOSTNAME for this node}
     depends_on:
+      postgres: {condition: service_healthy, required: false}
       fdb-init: {condition: service_completed_successfully, required: false}
       objects-init: {condition: service_completed_successfully, required: false}
       nats: {condition: service_started, required: false}
     environment:
+      SHIPPIN_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
       shippin.tech_HOSTNAME: ${MAIL_HOSTNAME}
       # Optional break-glass administrator (user:password). Without it, a new server
       # prints a one-time setup key for "admin" until the first administrator exists.
@@ -66,9 +66,26 @@ services:
         max-size: 10m
         max-file: "3"
 
-  # ---- bundled backing services (COMPOSE_PROFILES=bundled) ---------------------
+  # Database ports are private to the Compose network.
+  postgres:
+    profiles: [postgres]
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: shippin
+      POSTGRES_USER: shippin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  # ---- bundled backing services ---------------------------------------------
   foundationdb:
-    profiles: [bundled]
+    profiles: [foundationdb]
     image: foundationdb/foundationdb:7.4.6
     restart: unless-stopped
     environment:
@@ -84,7 +101,7 @@ services:
       retries: 40
 
   fdb-init:
-    profiles: [bundled]
+    profiles: [foundationdb]
     image: foundationdb/foundationdb:7.4.6
     depends_on:
       foundationdb: {condition: service_started}
@@ -150,7 +167,7 @@ services:
 
   # Runs FoundationDB backups and restores for backup.sh into ./backups.
   fdb-backup-agent:
-    profiles: [bundled]
+    profiles: [foundationdb]
     image: foundationdb/foundationdb:7.4.6
     restart: unless-stopped
     depends_on:
@@ -175,6 +192,7 @@ services:
       - ./backups:/backups
 
 volumes:
+  postgres-data:
   node-data:
   fdb-config:
   fdb-data:

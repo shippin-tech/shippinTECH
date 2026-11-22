@@ -22,7 +22,12 @@ bind=$(value HTTP_BIND); bind=${bind:-127.0.0.1}
 [[ "$bind" == 0.0.0.0 ]] && bind=127.0.0.1
 base="http://$bind:$port"
 compose=(docker compose --env-file server.env -f compose.yaml)
-export COMPOSE_PROFILES="$(value COMPOSE_PROFILES)"
+source ./backend.sh
+if [[ "$backend" == postgres ]] && $bundled; then
+  "${compose[@]}" exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1"' >/dev/null \
+    || fail 'PostgreSQL does not answer a query'
+  ok 'PostgreSQL answers a query'
+fi
 
 setup_key() { "${compose[@]}" exec -T mail cat /var/lib/shippin.tech/setup-key 2>/dev/null | tr -d '[:space:]' || true; }
 

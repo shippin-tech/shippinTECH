@@ -48,7 +48,7 @@ refresh_scripts() {
   local image=$1 cid dir f
   dir=$(mktemp -d ./.deploy-new.XXXXXX)
   if cid=$(docker create "$image" 2>/dev/null) && docker cp "${cid}:/usr/share/shippin.tech/deploy/." "$dir" 2>/dev/null; then
-    for f in compose.yaml update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py relay.env.example; do
+    for f in compose.yaml backend.sh update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py relay.env.example; do
       if [[ -f "$dir/$f" ]] && ! cmp -s "$dir/$f" "$f"; then
         cp "$dir/$f" "$f.new" && chmod --reference="$f" "$f.new" 2>/dev/null; mv -f "$f.new" "$f"
         log "refreshed $f from the image"

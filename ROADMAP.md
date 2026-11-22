@@ -54,24 +54,30 @@ source-based review gate precedes all implementation packages below.
 | Main | Audited local and remote `main` both at `7976eae9a96bb3034972dd49a7aea77221f67f32`. |
 | Other remote branch | `cursor/production-deploy-parity-c403` at `b09dbc3` is **9 commits behind audited main, 0 unique commits**. Live remote heads verified; no merge is required. No branch was deleted. |
 | Historical continuity | Recovered development tip `6c4e00f` and public root `6693b60` have the exact same tree. All 252 stored commits are covered by 53 source records, including 32 checkpoint refs and both dropped stashes. Earlier removals and changed versions have explicit review packets; full behavioral absorption remains open. |
-| Pending work | Five tracked UI files plus new `ui/test/team-api.test.ts` and its plan record. This work is not committed or deployed. No Rust/storage edits are pending from this session. |
-| UI checks | `npm test`: **41 files, 289 tests passed** after the People/API boundary changes. Svelte check passed with 0 errors/warnings before the final boundary guard; rerun it in A0. |
+| Consumer checkpoint | The six People/API files and plan were committed as `7553600`; live API lifecycle remains unverified. |
+| UI checks | Full web run: 18 passed, 0 failed, 1 POSIX-only check not run on Windows. Includes 289 unit tests, 12 mocked browser tests, Svelte check with 0 errors/warnings, lint, build and deployment checks. Live/engine steps were omitted, not passed. |
 | Main CI | [Check for a999153](https://github.com/shippin-tech/shippinTECH/actions/runs/44843695571) passed. That does not verify the uncommitted candidate. |
 | API | Actions, account security and bootstrap use `/api/v1/registry` on main. Pending People/teams work moves its consumer too and rejects private JMAP fallback. `crates/http/src/api/registry_rest.rs` still constructs private JMAP requests internally. |
 | Existing own Rust | `crates/common/src/shippin/` contains AI, branding, calendar templates, Google, keys, masks, organisations, provisioning, recovery, resources, split delivery, SSO, statistics and trace history. Own alert paths also exist in `crates/http/src/shippin/alerts.rs` and `crates/services/src/alerts.rs`. |
 | Remaining EE plumbing | `enterprise/license.rs` always refuses validation/renewal. `enterprise/config.rs`, account-creation checks and the scheduler still consume it. Some old paths can therefore be unavailable; the exact affected feature callers need the A2 mapping. |
-| Storage | PostgreSQL and FoundationDB backends exist. Cargo defaults are `rocks,enterprise`; `Dockerfile.fdb` builds `scale,enterprise` without PostgreSQL. Local Compose requires FoundationDB. PostgreSQL-first is not implemented. |
+| Storage | New one-host installs default to PostgreSQL; FoundationDB is explicitly selectable. The common image now compiles `scale,postgres,enterprise`; Cargo defaults retain RocksDB and add PostgreSQL. Installer, update, backend refusal and backup tests pass; both Compose profiles validate. Rust `postgres,s3,nats,enterprise` check passes. Local legacy test stack still selects FoundationDB; a live PostgreSQL install/restore drill and scaling transfer remain open. |
 | Live verification | Current candidate has not passed live browser/contract, protocol or storage parity. The temporary parity containers are stopped. Historical ledger results are not current-image results. |
 | Source accounting | `PROVENANCE.md` compares a squashed baseline. Its roughly 96% Rust classification is **not proof of upstream authorship or a reliable estimate of remaining rewrite work**. Preserve already rewritten work while resolving actual origins. |
 
 ## 3. Execution order and completion gates
 
+**Owner resumption, 2026-11-21:** the subsequent instruction authorizes committing
+the pending People/API changes and implementing PostgreSQL self-host deployment now.
+That bounded A0/A1 work takes precedence over the earlier coding freeze and installer
+deferral below. It does not close H0's historical behavior reviews or the independence
+gates. Reuse the existing backend; preserve FoundationDB and other capabilities.
+
 **H0 — reconcile existing work before any new product code.** Follow
 [R0-R8](roadmap/reconciliation/README.md): every source has a disposition and every
 non-identical historical version has a review packet. Resolve retained equivalents
 and necessary recovery before resuming implementation. Do not merge whole snapshots
-or treat changed/absent historical paths as automatically superseded. The owner's
-coding freeze remains in force; this plan is not permission to start coding.
+or treat changed/absent historical paths as automatically superseded. The owner has
+resumed the bounded A0/A1 work above; H0 remains open for the broader separation work.
 
 **Priority correction after the owner's stop instruction:** the package IDs below
 are stable references, not numeric execution order. Installation work does not
@@ -329,7 +335,7 @@ control plane.
 
 ## 6. Immediate next task and reporting rule
 
-**Current state: product implementation stopped at the owner's instruction.**
+**Current state: owner resumed the pending consumer commit and PostgreSQL deployment.**
 The immediate work is H0's R2-R7 source/behavior reconciliation, using the complete
 historical-version queue. R1's recovered stash contents are already accounted for;
 no stash application is required. The next implementation task, after reconciliation

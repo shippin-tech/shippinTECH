@@ -6,7 +6,7 @@ set -euo pipefail
 src=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
-cp "$src/update.sh" "$src/compose.yaml" "$work/"
+cp "$src/update.sh" "$src/backend.sh" "$src/compose.yaml" "$work/"
 cd "$work"
 IMG=ghcr.io/shippin-tech/shippin-tech-scale@sha256:2222222222222222222222222222222222222222222222222222222222222222
 
@@ -35,6 +35,7 @@ if [[ "$1" == compose ]]; then
       if [[ "$all" == *"test -s /var/lib/shippin.tech/config.json"* ]]; then [[ -f "$FAKE/volume.json" ]]; exit; fi
       if [[ "$all" == *"cp /etc/shippin.tech/seed.json"* ]]; then cp config.json "$FAKE/volume.json"; exit 0; fi
       if [[ "$all" == *"cat > /var/fdb/fdb.cluster"* ]]; then cat > "$FAKE/cluster"; exit 0; fi
+      if [[ "$all" == *"grep -Eq"* ]]; then [[ ! -f "$FAKE/wrongstore" ]]; exit; fi
       exit 0 ;;
     exec)
       all="$*"
@@ -60,7 +61,7 @@ export PATH="$work/bin:$PATH" FAKE="$work/state"
 
 reset() {
   rm -rf state; mkdir state
-  rm -f deployments.log server.env.previous config.json.before-upgrade fdb.cluster
+  rm -f deployments.log server.env.previous config.json.before-upgrade fdb.cluster .storage-backend
   printf 'COMPOSE_PROJECT_NAME=node-a\nSHIPPIN_IMAGE=old\nMAIL_HOSTNAME=mail.example.com\n' > server.env
   echo '{"@type":"FoundationDb","clusterFile":"/var/fdb/fdb.cluster"}' > config.json
 }
@@ -167,3 +168,23 @@ reset; bundled
 status_of ghcr.io/shippin-tech/shippin-tech-scale:release
 [[ $rc -eq 2 ]] && echo "ok   moving tags are rejected" || { echo "FAIL tag rc=$rc"; exit 1; }
 echo "all update.sh tests passed"
+
+# PostgreSQL never requests a FoundationDB cluster and persists its selection.
+reset
+printf 'COMPOSE_PROFILES=bundled,postgres\nSHIPPIN_STORAGE=postgres\nPOSTGRES_PASSWORD=synthetic-test\n' >> server.env
+echo '{"@type":"PostgreSql","host":"postgres"}' > config.json
+out=$(bash update.sh --check)
+expect 'database:       postgres' "$out" 'PostgreSQL dry-run selection'
+bash update.sh "$IMG" >/dev/null
+expect postgres "$(cat .storage-backend)" 'storage selection recorded'
+refute '/var/fdb/fdb.cluster' "$(calls)" 'PostgreSQL never installs a cluster file'
+touch state/wrongstore
+status_of "$IMG"
+[[ $rc -ne 0 ]] || { echo 'FAIL mismatched persistent database accepted'; exit 1; }
+expect 'Stored database type' "$out" 'persistent database mismatch refused'
+rm state/wrongstore
+echo foundationdb > .storage-backend
+status_of --check
+[[ $rc -ne 0 ]] || { echo 'FAIL backend switch accepted'; exit 1; }
+expect 'not a data migration' "$out" 'backend switching refused'
+echo 'PostgreSQL update checks passed'

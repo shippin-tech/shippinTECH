@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Installs one shippin.tech mail node on this Linux host with Docker.
 #
-#   curl -fsSL https://raw.githubusercontent.com/shippin-tech/shippin-tech/main/install.sh \
+#   curl -fsSL https://raw.githubusercontent.com/shippin-tech/shippinTECH/main/install.sh \
 #     | sudo bash -s -- --hostname mail.example.com
 #
-# The node runs with its own FoundationDB, object storage and NATS (all persistent,
+# The node runs with its own PostgreSQL, object storage and NATS (all persistent,
 # all on this host). When it starts it prints a one-time setup key: sign in at
 # https://<hostname>/login as "admin" with that key and create your administrator.
 #
@@ -12,7 +12,8 @@
 #   --hostname NAME    the mail host name, e.g. mail.example.com (required)
 #   --dir PATH         instance directory (default /srv/shippin-tech/mail)
 #   --ref REF          git tag or branch to take the deploy files from (default main)
-#   --image IMAGE      exact image to run (default: the current release)
+#   --image IMAGE      exact candidate image (required for PostgreSQL)
+#   --storage BACKEND  postgres (default) or foundationdb (scale installation)
 #   --from DIR         copy the deploy files from a local checkout's deploy/ instead
 #   --no-start         write the files and stop, so you can review server.env first
 #   --auto-update      also install the timer that follows the release channel
@@ -20,9 +21,10 @@
 #   --no-backup        do not install the nightly backup timer
 set -euo pipefail
 
-REPO=https://raw.githubusercontent.com/shippin-tech/shippin-tech
-IMAGE_BASE=ghcr.io/shippin-tech/shippin-tech-scale
+REPO=https://raw.githubusercontent.com/shippin-tech/shippinTECH
+IMAGE_BASE=ghcr.io/shippin-tech/shippintech-scale
 ref=main dir=/srv/shippin-tech/mail host='' image='' from='' start=true auto=false systemd=true backup=true
+backend=postgres
 
 die() { echo "install: $*" >&2; exit 1; }
 while [[ $# -gt 0 ]]; do
@@ -31,15 +33,22 @@ while [[ $# -gt 0 ]]; do
     --dir) dir=${2:-}; shift 2 ;;
     --ref) ref=${2:-}; shift 2 ;;
     --image) image=${2:-}; shift 2 ;;
+    --storage) backend=${2:-}; shift 2 ;;
     --from) from=${2:-}; shift 2 ;;
     --no-start) start=false; shift ;;
     --auto-update) auto=true; shift ;;
     --no-systemd) systemd=false; shift ;;
     --no-backup) backup=false; shift ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0"; exit 0 ;;
     *) die "unknown option $1 (try --help)" ;;
   esac
 done
+[[ "$backend" == postgres || "$backend" == foundationdb ]] || die '--storage must be postgres or foundationdb'
+# Older release images omit the PostgreSQL driver. Require a reviewed candidate.
+[[ "$backend" != postgres || -n "$image" ]] || die 'PostgreSQL needs --image with a candidate digest or sha-commit built with PostgreSQL; no older release image is selected automatically.'
+if [[ -n "$image" && ! "$image" =~ ^ghcr\.io/[a-z0-9._/-]+(@sha256:[a-f0-9]{64}|:sha-[a-f0-9]{40})$ ]]; then
+  die '--image must be an immutable GHCR digest or sha-<full-commit> tag'
+fi
 
 [[ "$(uname -s)" == Linux || -n "$from" ]] || die 'this installer is for Linux hosts'
 [[ "$host" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] \
@@ -55,7 +64,7 @@ if [[ -n "$from" ]]; then
 fi
 mkdir -p "$dir"
 cd "$dir"
-files=(compose.yaml update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py config.json server.env.example relay.env.example README.md PRODUCTION.md)
+files=(compose.yaml backend.sh update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py config.json config.postgres.json server.env.example relay.env.example README.md PRODUCTION.md)
 for f in "${files[@]}"; do
   if [[ -n "$from" ]]; then
     cp -- "$from/$f" "$f"
@@ -63,6 +72,7 @@ for f in "${files[@]}"; do
     curl -fsSL "$REPO/$ref/deploy/$f" -o "$f" || die "could not download deploy/$f for $ref"
   fi
 done
+if [[ "$backend" == postgres ]]; then cp config.postgres.json config.json; fi
 chmod +x update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py
 
 if [[ -z "$image" ]]; then
@@ -78,7 +88,8 @@ umask 077
 cat > server.env <<EOF
 # Written by install.sh on $(date -u +%F). Change values here, then: bash update.sh "\$SHIPPIN_IMAGE"
 COMPOSE_PROJECT_NAME=$project
-COMPOSE_PROFILES=bundled
+COMPOSE_PROFILES=bundled,$backend
+SHIPPIN_STORAGE=$backend
 SHIPPIN_IMAGE=$image
 MAIL_HOSTNAME=$host
 # Optional break-glass administrator (admin:<long password>). Leave empty to use the
@@ -112,6 +123,7 @@ PANEL_MAILBOX_MB=1024
 PANEL_SIGNUPS_PER_HOUR=10
 PANEL_SENDS_PER_DAY=200
 EOF
+if [[ "$backend" == postgres ]]; then printf 'POSTGRES_PASSWORD=%s\n' "$(secret 40)" >> server.env; fi
 umask 022
 cp -- relay.env.example relay.env
 mkdir -p secrets/relay

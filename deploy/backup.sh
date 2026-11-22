@@ -8,12 +8,12 @@
 #   sudo bash backup.sh install            # systemd timer: 03:15 local time, every day
 #   sudo bash backup.sh uninstall          # remove that timer
 #
-# A backup holds a consistent FoundationDB snapshot (accounts, settings, mail
+# A backup holds a PostgreSQL dump or FoundationDB snapshot (accounts, settings, mail
 # index), a mirror of the object storage (message bodies and attachments) taken
 # right after it, the server's settings file and server.env. It does not copy
 # secrets/ (the smarthost key) or the key-wrapping key. Copy ./backups off
 # the host as well; a backup on the same disk does not survive losing the disk.
-# Nodes on your own FoundationDB and S3 back those up with their own tools.
+# Nodes on external databases and S3 back those up with their own tools.
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 here=$(pwd -P)
@@ -23,10 +23,11 @@ systemctl=(${SHIPPIN_SYSTEMCTL:-systemctl})
 value() { awk -F= -v k="$1" '$1 == k { sub(/^[^=]*=/, ""); print; exit }' server.env; }
 [[ -f server.env ]] || { echo 'Run this in the instance directory.' >&2; exit 1; }
 [[ ",$(value COMPOSE_PROFILES)," == *,bundled,* ]] || {
-  echo 'backup.sh covers the bundled services only. Back up your own FoundationDB and S3 with their tools.' >&2
+  echo 'backup.sh covers bundled services only. Back up external databases and S3 with their tools.' >&2
   exit 1
 }
 export COMPOSE_PROFILES="$(value COMPOSE_PROFILES)"
+source ./backend.sh
 compose=(docker compose --env-file server.env -f compose.yaml)
 tool=(docker compose --env-file server.env -f compose.yaml --profile bundled --profile tools run --rm -T objects-tool sh -c)
 mc_setup='export HOME=/tmp; cp /tools/mc /tmp/mc && chmod +x /tmp/mc && /tmp/mc alias set s3 http://minio:9000 "$S3_ACCESS_KEY" "$S3_SECRET_KEY" >/dev/null'
@@ -86,24 +87,48 @@ EOF
     echo "removed ${unit}.timer"
     ;;
   backup)
+    exec 9>.update.lock
+    flock -n 9 || { echo 'An update or backup is running.' >&2; exit 1; }
+    umask 077
     stamp=$(date -u +%Y%m%dT%H%M%SZ)
     # Written under a .partial name and renamed only when every part succeeded,
     # so a listed backup is always a complete one.
     work="$stamp.partial"
-    "${compose[@]}" up -d fdb-backup-agent >/dev/null 2>&1
-    echo "FoundationDB snapshot..."
-    "${compose[@]}" exec -T fdb-backup-agent fdbbackup start -C /var/fdb/fdb.cluster -d "file:///backups/$work/fdb" -w >/dev/null
+    mkdir "backups/$work"
+    # Stop this node's writers while taking BOTH database and object snapshots.
+    # Preserve a deliberately stopped node; resume a running node even on failure.
+    was_running=$("${compose[@]}" ps --status running -q mail)
+    resume_mail() {
+      rc=$?
+      trap - EXIT
+      if [[ -n "$was_running" ]]; then
+        "${compose[@]}" up -d --wait --wait-timeout 300 mail || rc=1
+      fi
+      exit "$rc"
+    }
+    trap resume_mail EXIT
+    if [[ -n "$was_running" ]]; then "${compose[@]}" stop mail; fi
+    if [[ "$backend" == postgres ]]; then
+      echo 'PostgreSQL snapshot...'
+      "${compose[@]}" exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom --no-owner --no-acl' > "backups/$work/postgres.dump"
+    else
+      "${compose[@]}" up -d fdb-backup-agent >/dev/null 2>&1
+      echo 'FoundationDB snapshot...'
+      "${compose[@]}" exec -T fdb-backup-agent fdbbackup start -C /var/fdb/fdb.cluster -d "file:///backups/$work/fdb" -w >/dev/null
+    fi
     echo "Object storage..."
     "${tool[@]}" "$mc_setup && /tmp/mc mirror --quiet \"s3/\$S3_BUCKET\" /backups/$work/objects" >/dev/null
-    "${compose[@]}" exec -T mail cat /var/lib/shippin.tech/config.json > "backups/$work/config.json"
+    "${compose[@]}" run --rm --no-deps -T --entrypoint sh mail -c \
+      'cat /var/lib/shippin.tech/config.json' > "backups/$work/config.json"
     cp server.env "backups/$work/server.env"
+    printf '%s\n' "$backend" > "backups/$work/backend"
     mv -- "backups/$work" "backups/$stamp"
     chmod -R go-rwx "backups/$stamp"
     echo "Backup written to backups/$stamp"
     echo "Not in it, on purpose: the key-wrapping key. Keep one copy apart (bash backup.sh key); a new server needs it to read saved AI keys, sign-in secrets and Google links."
     keep=${KEEP:-7}
     ls -1d backups/*Z/ 2>/dev/null | sort | head -n "-$keep" | while read -r old; do
-      "${compose[@]}" run --rm --no-deps -T --user 0 --entrypoint sh fdb-backup-agent -c "rm -rf -- '/backups/$(basename "$old")'" >/dev/null 2>&1 || true
+      "${tool[@]}" "rm -rf -- '/backups/$(basename "$old")'" >/dev/null 2>&1 || true
       echo "Removed old backup $old"
     done
     ;;
@@ -117,18 +142,37 @@ EOF
     ;;
   restore)
     dir=${2:-}
-    [[ -d "$dir/fdb" && -d "$dir/objects" ]] || { echo "Usage: bash backup.sh restore backups/<time> --yes" >&2; exit 2; }
+    [[ "$dir" =~ ^backups/[0-9]{8}T[0-9]{6}Z$ && -d "$dir/objects" && -s "$dir/config.json" ]] || { echo "Usage: bash backup.sh restore backups/<time> --yes" >&2; exit 2; }
     [[ "${3:-}" == --yes ]] || { echo "This replaces every account, setting and message with the backup in $dir. Add --yes to go ahead." >&2; exit 2; }
+    saved_backend=foundationdb
+    [[ ! -f "$dir/backend" ]] || saved_backend=$(cat "$dir/backend")
+    [[ "$saved_backend" == "$backend" ]] || { echo 'Backup database differs from this instance; restore is not a database migration.' >&2; exit 1; }
+    exec 9>.update.lock
+    flock -n 9 || { echo 'An update or backup is running.' >&2; exit 1; }
     stamp=$(basename "$dir")
-    "${compose[@]}" up -d fdb-backup-agent >/dev/null 2>&1
+    if [[ "$backend" == postgres ]]; then
+      [[ -s "$dir/postgres.dump" ]] || { echo 'PostgreSQL archive is missing.' >&2; exit 1; }
+      grep -Eq '"@type"[[:space:]]*:[[:space:]]*"PostgreSql"' "$dir/config.json" || { echo 'Backup settings do not select PostgreSQL.' >&2; exit 1; }
+      "${compose[@]}" exec -T postgres pg_restore --list < "$dir/postgres.dump" >/dev/null
+    else
+      [[ -d "$dir/fdb" ]] || { echo 'FoundationDB snapshot is missing.' >&2; exit 1; }
+      "${compose[@]}" up -d fdb-backup-agent >/dev/null 2>&1
+    fi
     echo "Stopping the mail server..."
     "${compose[@]}" stop mail
-    echo "Restoring FoundationDB..."
-    "${compose[@]}" exec -T fdb-backup-agent fdbcli -C /var/fdb/fdb.cluster --exec 'writemode on; clearrange "" \xff' >/dev/null
-    snapshot=$("${compose[@]}" exec -T fdb-backup-agent sh -c "ls -1 /backups/$stamp/fdb | head -1" | tr -d '\r')
-    "${compose[@]}" exec -T fdb-backup-agent fdbrestore start -r "file:///backups/$stamp/fdb/$snapshot" --dest-cluster-file /var/fdb/fdb.cluster -w >/dev/null
+    if [[ "$backend" == postgres ]]; then
+      echo 'Restoring PostgreSQL...'
+      "${compose[@]}" exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner --no-acl --single-transaction --exit-on-error' < "$dir/postgres.dump"
+    else
+      echo 'Restoring FoundationDB...'
+      "${compose[@]}" exec -T fdb-backup-agent fdbcli -C /var/fdb/fdb.cluster --exec 'writemode on; clearrange "" \xff' >/dev/null
+      snapshot=$("${compose[@]}" exec -T fdb-backup-agent sh -c "ls -1 /backups/$stamp/fdb | head -1" | tr -d '\r')
+      "${compose[@]}" exec -T fdb-backup-agent fdbrestore start -r "file:///backups/$stamp/fdb/$snapshot" --dest-cluster-file /var/fdb/fdb.cluster -w >/dev/null
+    fi
     echo "Restoring object storage..."
     "${tool[@]}" "$mc_setup && /tmp/mc mirror --quiet --overwrite --remove /backups/$stamp/objects \"s3/\$S3_BUCKET\""
+    "${compose[@]}" run --rm --no-deps -T --user 0 --entrypoint sh mail -c \
+      'cat > /var/lib/shippin.tech/config.json && chown 2000:2000 /var/lib/shippin.tech/config.json' < "$dir/config.json"
     echo "Starting the mail server..."
     "${compose[@]}" up -d --wait --wait-timeout 300 mail
     echo "Restored from $dir"

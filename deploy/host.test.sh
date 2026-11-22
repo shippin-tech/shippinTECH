@@ -5,7 +5,7 @@ set -euo pipefail
 src=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
-cp "$src/host.sh" "$src/backup.sh" "$src/compose.yaml" "$work/"
+cp "$src/host.sh" "$src/backup.sh" "$src/backend.sh" "$src/compose.yaml" "$work/"
 cd "$work"
 mkdir -p bin units real secrets
 printf 'COMPOSE_PROJECT_NAME=shippin-mail\nCOMPOSE_PROFILES=bundled\n' > server.env

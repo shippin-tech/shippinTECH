@@ -37,18 +37,45 @@ Docker in to the registry with a GitHub token that has `read:packages`:
 
 ```sh
 docker login ghcr.io -u YOUR_GITHUB_USER
-curl -fsSL https://raw.githubusercontent.com/shippin-tech/shippin-tech/main/install.sh \
-  | sudo bash -s -- --hostname mail.example.com
+curl -fsSL https://raw.githubusercontent.com/shippin-tech/shippinTECH/main/install.sh \
+  | sudo bash -s -- --hostname mail.example.com --image ghcr.io/shippin-tech/shippintech-scale:sha-<full-candidate-commit>
 ```
 
 That is the only supported install. It creates `/srv/shippin-tech/mail` with
 `compose.yaml`, the scripts and a generated `server.env`, then starts the mail
-server together with FoundationDB, object storage and NATS on the same host
-(`COMPOSE_PROFILES=bundled`), all with persistent Docker volumes. Add
+server together with PostgreSQL, object storage and NATS on the same host
+(`SHIPPIN_STORAGE=postgres`, `COMPOSE_PROFILES=bundled,postgres`), all with
+persistent Docker volumes. PostgreSQL is private to the Compose network; its
+generated password stays in server.env and the application reads it through an
+environment-secret reference. Add
 `--no-start` to review `server.env` before the first start, and
 `--auto-update` to install the release-channel timer described below. On a
 host with systemd it also installs a boot unit for that directory and a
 nightly backup timer (`--no-systemd` and `--no-backup` skip those).
+
+The PostgreSQL install requires an explicit candidate image built from the updated
+Dockerfile.fdb with `scale,postgres,enterprise`; older release images omit the driver.
+Build a disposable candidate with **Test container build**, then use its immutable
+`sha-<full-commit>` tag or digest. No release tag is required. The Rust PostgreSQL
+profile compiles and both Compose profiles validate; a live candidate install and
+full mail/recovery workflow remain required before deployment readiness is claimed.
+
+For a FoundationDB scale installation, add `--storage foundationdb`. Both selections
+run the same application and Svelte UI. This chooses a new installation's database;
+changing `SHIPPIN_STORAGE` on an existing instance is refused, not treated as a
+PostgreSQL-to-FoundationDB migration. That data-transfer capability remains open.
+
+From this checkout, generate reviewable instance files without starting services:
+
+```sh
+bash install.sh --from ./deploy --hostname mail.example.com \
+  --dir /srv/shippin-tech/mail --image ghcr.io/shippin-tech/shippintech-scale:sha-<full-candidate-commit> \
+  --no-start
+cd /srv/shippin-tech/mail
+bash update.sh --check
+bash update.sh ghcr.io/shippin-tech/shippintech-scale:sha-<full-candidate-commit>
+sudo bash verify-install.sh
+```
 
 The mail host that serves shippin.ai is `mail.shippin.ai`. Do not use
 `mail.shippin.tech` as a mail host. What that machine runs today, and how to
@@ -179,7 +206,7 @@ settings file and no setup key. To move it to the current layout:
 cd /path/to/the/instance            # where server.env and update.sh are
 cp server.env server.env.v0.1.2     # keep a copy of what you had
 REF=main                            # or the release tag you are moving to
-for f in compose.yaml update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py relay.env.example README.md PRODUCTION.md; do
+for f in compose.yaml backend.sh update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py relay.env.example README.md PRODUCTION.md; do
   curl -fsSL "https://raw.githubusercontent.com/shippin-tech/shippin-tech/$REF/deploy/$f" -o "$f"
 done
 chmod +x update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py
@@ -187,7 +214,7 @@ chmod +x update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh r
 mkdir -p secrets/relay
 bash update.sh --check              # should say the running server's
                                     # /etc/shippin.tech/config.json will be copied in
-bash update.sh ghcr.io/shippin-tech/shippin-tech-scale@sha256:<digest>
+bash update.sh ghcr.io/shippin-tech/shippintech-scale@sha256:<digest>
 sudo bash verify-install.sh
 ```
 
@@ -208,10 +235,15 @@ channel.
 ## Backups
 
 On a node with the bundled services, `backup.sh` in the instance directory
-takes a consistent FoundationDB snapshot (accounts, settings, mail index),
-mirrors the object storage (message bodies and attachments) right after it, and
+takes a PostgreSQL custom-format dump or a FoundationDB snapshot (accounts,
+settings, mail index), mirrors object storage (message bodies and attachments), and
 saves the settings file and `server.env`, all under `backups/<UTC time>`. It
 keeps the newest seven (`KEEP=14 bash backup.sh` for more):
+
+The mail container is stopped while both copies are taken and resumed afterwards,
+including when backup fails. A node already stopped stays stopped. This guarantees
+quiescence only for this bundled single-node install, not other writers sharing its
+database. Incomplete snapshots retain a `.partial` name and are never listed as complete.
 
 ```sh
 cd /srv/shippin-tech/mail
@@ -246,11 +278,19 @@ To restore, which replaces every account, setting and message with the backup:
 sudo bash backup.sh restore backups/20261110T031500Z --yes
 ```
 
-It stops the mail server, restores FoundationDB and the object storage, and
-starts it again. A restore of an upgraded node was rehearsed: a message deleted
+It verifies the backup backend before stopping mail, restores the selected database,
+object storage and node settings, then starts mail again. PostgreSQL restore uses
+one transaction and stops on an error. If restoration fails, mail remains stopped
+for inspection; it must not serve a partially restored database/object pair. A
+PostgreSQL backup cannot be restored into FoundationDB or vice versa. The previous
+FoundationDB restore rehearsal showed: a message deleted
 after the backup came back, and an account created after it was gone. Nodes on
 your own FoundationDB and S3 back those up with their own tools
-(`fdbbackup`, bucket replication).
+(`fdbbackup` or `pg_dump`/`pg_restore`, bucket replication). The PostgreSQL live
+restore drill has not yet been run against a candidate image.
+
+PostgreSQL backup options follow the official [pg_dump](https://www.postgresql.org/docs/17/app-pgdump.html)
+and [pg_restore](https://www.postgresql.org/docs/17/app-pgrestore.html) contracts.
 
 ## Outbound smarthost
 
@@ -313,7 +353,7 @@ registry singletons on first boot; editing them later does not overwrite
 existing registry settings. Do not use `resources/scale/docker-compose.yml` for
 persistent servers: it keeps FoundationDB and MinIO data in memory.
 
-The image name is always lowercase (`ghcr.io/shippin-tech/shippin-tech-scale`).
+The image name is always lowercase (`ghcr.io/shippin-tech/shippintech-scale`).
 `update.sh` takes an `@sha256:` digest or a `:sha-<full-40-character-commit>`
 tag; moving tags such as `release` are refused. Use the same image on all
 servers. Health checks measure process liveness, so verify mail delivery,
@@ -324,17 +364,17 @@ shared mailbox access and tenant isolation before promoting a build.
 Do not build the image on the mail host. [Test container build](../.github/workflows/test-build.yml)
 (`.github/workflows/test-build.yml`) is the build. It runs on a `v*` tag and
 when someone starts the workflow by hand. Every build is pushed as
-`ghcr.io/shippin-tech/shippin-tech-scale:sha-<full commit>`. A `v*` tag also
+`ghcr.io/shippin-tech/shippintech-scale:sha-<full commit>`. A `v*` tag also
 moves `:release`. [RELEASE.md](../RELEASE.md) still has open rows, so do not
 push a `v*` tag: that would move `:release` and any host running
 `auto-update.sh` would take it. For a host you are moving by hand, start
 **Test container build** on the commit you want, then:
 
 ```sh
-bash update.sh ghcr.io/shippin-tech/shippin-tech-scale:sha-<full commit>
+bash update.sh ghcr.io/shippin-tech/shippintech-scale:sha-<full commit>
 ```
 
-The workflow summary prints the digest form, `ghcr.io/shippin-tech/shippin-tech-scale@sha256:<digest>`,
+The workflow summary prints the digest form, `ghcr.io/shippin-tech/shippintech-scale@sha256:<digest>`,
 which `update.sh` also accepts.
 
 ## Automatic updates from the release channel

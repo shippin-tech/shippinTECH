@@ -1,0 +1,12 @@
+{
+  "@type": "PostgreSql",
+  "host": "postgres",
+  "port": 5432,
+  "database": "shippin",
+  "authUsername": "shippin",
+  "authSecret": {
+    "@type": "EnvironmentVariable",
+    "variableName": "SHIPPIN_POSTGRES_PASSWORD"
+  },
+  "useTls": false
+}

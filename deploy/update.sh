@@ -30,9 +30,8 @@ fi
   exit 1
 }
 env_value() { awk -F= -v k="$1" '$1 == k { sub(/^[^=]*=/, ""); print; exit }' server.env; }
-bundled=false
-[[ ",$(env_value COMPOSE_PROFILES)," == *,bundled,* ]] && bundled=true
-if ! $bundled && [[ ! -f fdb.cluster ]]; then
+source ./backend.sh
+if [[ "$backend" == foundationdb ]] && ! $bundled && [[ ! -f fdb.cluster ]]; then
   echo 'Copy your FoundationDB cluster file to ./fdb.cluster, or set COMPOSE_PROFILES=bundled in server.env.' >&2
   exit 1
 fi
@@ -42,7 +41,6 @@ if $check_only; then
 else
   export SHIPPIN_IMAGE="$1"
 fi
-export COMPOSE_PROFILES="$(env_value COMPOSE_PROFILES)"
 compose=(docker compose --env-file server.env -f compose.yaml)
 "${compose[@]}" config --quiet
 
@@ -60,10 +58,24 @@ fi
 volume_has_config() {
   "${compose[@]}" run --rm --no-deps -T --pull never --entrypoint sh mail -c 'test -s /var/lib/shippin.tech/config.json' >/dev/null 2>&1
 }
+# Explicitly selected installations must never silently switch a persistent store.
+validate_backend() {
+if [[ -n "$(env_value SHIPPIN_STORAGE)" ]]; then
+  if volume_has_config; then
+    "${compose[@]}" run --rm --no-deps -T --pull never --entrypoint sh mail -c \
+      "grep -Eq '\"@type\"[[:space:]]*:[[:space:]]*\"$store_type\"' /var/lib/shippin.tech/config.json" \
+      || { echo 'Stored database type does not match SHIPPIN_STORAGE; refusing update.' >&2; exit 1; }
+  elif ! grep -Eq "\"@type\"[[:space:]]*:[[:space:]]*\"$store_type\"" config.json; then
+    echo 'Seed database type does not match SHIPPIN_STORAGE; refusing update.' >&2; exit 1
+  fi
+fi
+}
+validate_backend
 
 if $check_only; then
   echo "project:        $(env_value COMPOSE_PROJECT_NAME)"
-  echo "backing:        $($bundled && echo 'bundled (FoundationDB, object storage, NATS on this host)' || echo 'external (./fdb.cluster, S3_*, NATS_ADDRESS)')"
+  echo "database:       $backend"
+  echo "backing:        $($bundled && echo 'bundled (selected database, object storage, NATS)' || echo 'external database, S3 and NATS')"
   echo "configured:     $SHIPPIN_IMAGE"
   if [[ -n "$running" ]]; then
     echo "running:        $(docker inspect -f '{{.Config.Image}}' "$running") (container ${running:0:12})"
@@ -94,6 +106,8 @@ flock -n 9 || { echo 'Another update is running.' >&2; exit 1; }
 if [[ "${SHIPPIN_PULL:-always}" != never ]]; then
   "${compose[@]}" pull mail
 fi
+# A not-yet-cached candidate could not inspect the volume before the pull.
+validate_backend
 
 if ! volume_has_config; then
   if [[ -n "$running" ]] && docker exec "$running" cat "$active_path" > .config.running.json 2>/dev/null \
@@ -106,7 +120,7 @@ if ! volume_has_config; then
   "${compose[@]}" run --rm --no-deps -T --user 0 --entrypoint sh mail -c \
     'cp /etc/shippin.tech/seed.json /var/lib/shippin.tech/config.json && chown 2000:2000 /var/lib/shippin.tech/config.json'
 fi
-if ! $bundled; then
+if [[ "$backend" == foundationdb ]] && ! $bundled; then
   # The cluster file is shared through a volume; external setups provide it here.
   # Streamed in rather than mounted, so it works whatever the host path looks like.
   "${compose[@]}" run --rm --no-deps -T --user 0 --entrypoint sh mail -c \
@@ -125,10 +139,12 @@ fi
 umask 077
 tmp=$(mktemp ./server.env.XXXXXX)
 trap 'rm -f -- "$tmp"' EXIT
-awk '!/^SHIPPIN_IMAGE=/' server.env > "$tmp"
+awk '!/^(SHIPPIN_IMAGE|COMPOSE_PROFILES)=/' server.env > "$tmp"
 printf 'SHIPPIN_IMAGE=%s\n' "$SHIPPIN_IMAGE" >> "$tmp"
+printf 'COMPOSE_PROFILES=%s\n' "$COMPOSE_PROFILES" >> "$tmp"
 cp -- server.env server.env.previous
 mv -- "$tmp" server.env
+printf '%s\n' "$backend" > .storage-backend
 printf '%s %s\n' "$(date -u +%FT%TZ)" "$SHIPPIN_IMAGE" >> deployments.log
 echo "Healthy: $SHIPPIN_IMAGE"
 

@@ -58,7 +58,7 @@ jobs:
           cache-from: type=gha,scope=scale-amd64
           cache-to: type=gha,mode=max,scope=scale-amd64
       - name: Package server bundle
-        run: tar -czf server-bundle.tar.gz -C deploy compose.yaml server.env.example relay.env.example config.json update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py README.md PRODUCTION.md control-plan.template.json
+        run: tar -czf server-bundle.tar.gz -C deploy compose.yaml backend.sh server.env.example relay.env.example config.json config.postgres.json update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py README.md PRODUCTION.md control-plan.template.json
       - uses: actions/upload-artifact@v4
         with:
           name: server-bundle

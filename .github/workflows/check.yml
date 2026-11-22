@@ -63,11 +63,21 @@ jobs:
         run: node scripts/check-dumb-ui.mjs
       - name: Host deploy scripts behave (fake docker)
         run: |
+          bash deploy/install.test.sh
           bash deploy/update.test.sh
           bash deploy/auto-update.test.sh
           bash deploy/backup.test.sh
           bash deploy/relay.test.sh
           bash deploy/host.test.sh
+      - name: Both database profiles select the intended services
+        shell: bash
+        run: |
+          for backend in postgres foundationdb; do
+            services=$(COMPOSE_PROFILES="bundled,$backend" docker compose --env-file deploy/server.env.example -f deploy/compose.yaml config --services)
+            grep -qx "$backend" <<< "$services"
+            other=foundationdb; [[ "$backend" == foundationdb ]] && other=postgres
+            if grep -qx "$other" <<< "$services"; then echo 'Both databases were selected'; exit 1; fi
+          done
       - run: npm ci
         working-directory: ui
       - run: node scripts/check-webui-inventory.mjs
