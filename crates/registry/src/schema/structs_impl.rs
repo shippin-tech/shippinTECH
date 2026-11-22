@@ -28478,7 +28478,7 @@ impl MtaStageConnect {
         ExpressionContext {
             expr: &self.smtp_greeting,
             default: Some(Expression {
-                else_: "system('hostname') + ' shippin.tech ESMTP at your service'".to_string(),
+                else_: "system('hostname') + ' ShippinTECH ESMTP at your service'".to_string(),
                 ..Default::default()
             }),
             property: Property::SmtpGreeting,
@@ -28542,7 +28542,7 @@ impl Default for MtaStageConnect {
     fn default() -> Self {
         Self {
             smtp_greeting: Expression {
-                else_: "system('hostname') + ' shippin.tech ESMTP at your service'".to_string(),
+                else_: "system('hostname') + ' ShippinTECH ESMTP at your service'".to_string(),
                 ..Default::default()
             },
             hostname: Expression {
@@ -40382,7 +40382,7 @@ impl Default for SpamSettings {
             score_reject: Float::new(0.0f64),
             score_spam: Float::new(5.0f64),
             trust_replies: true,
-            spam_filter_rules_url: Some("https://github.com/shippin.techlabs/spam-filter/releases/latest/download/spam-filter-rules.json.gz".to_string()),
+            spam_filter_rules_url: Some("https://github.com/stalwartlabs/spam-filter/releases/latest/download/spam-filter-rules.json.gz".to_string()),
         }
     }
 }

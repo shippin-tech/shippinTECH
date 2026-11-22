@@ -113,6 +113,7 @@ SMTP_HOST_PORT=25
 SMTPS_HOST_PORT=465
 SUBMISSION_HOST_PORT=587
 IMAPS_HOST_PORT=993
+MANAGESIEVE_HOST_PORT=4190
 HTTPS_HOST_PORT=443
 # Free plan (see README.md, "Free plan"). Closed until you open it.
 PANEL_SIGNUP=closed
@@ -151,7 +152,7 @@ cat <<EOF
 Installed in $dir. Before people can use it:
   1. DNS: an A record (and AAAA if you use IPv6) for $host pointing at this server,
      and reverse DNS for the server's IP set to $host at your hosting provider.
-  2. Firewall: allow TCP 25, 465, 587, 993 and 443 in. Outbound TCP 25 must be open.
+  2. Firewall: allow TCP 25, 465, 587, 993, 4190 and 443 in. Outbound TCP 25 must be open.
   3. Certificate: until one is issued, clients see the server's own certificate.
      See README.md, "TLS certificate".
   4. Check the install at any time: cd $dir && sudo bash verify-install.sh

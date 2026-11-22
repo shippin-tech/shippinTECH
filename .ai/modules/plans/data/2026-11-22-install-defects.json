@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "id": "2026-11-22-install-defects",
+  "title": "Repair reported first-install, protocol and authentication defects",
+  "costar": {
+    "context": "The owner reported five concrete defects in the pre-release mail host.",
+    "objective": "Repair the existing implementation and preserve capabilities and permission boundaries.",
+    "style": "Evidence-led, bounded fixes",
+    "tone": "Direct",
+    "audience": "Owner and maintainers",
+    "response": "Commit fixes with observed checks and explicit unverified live behavior."
+  },
+  "sources": [
+    {"kind":"code","ref":"REGRESSION.md"},
+    {"kind":"code","ref":"crates/common/src/telemetry/tracers/log.rs"},
+    {"kind":"code","ref":"crates/common/src/config/telemetry.rs"},
+    {"kind":"code","ref":"Dockerfile"},
+    {"kind":"code","ref":"Dockerfile.fdb"},
+    {"kind":"code","ref":".github/workflows/check.yml"},
+    {"kind":"web","ref":"https://github.com/apple/foundationdb/releases/tag/7.4.6"},
+    {"kind":"code","ref":"deploy/compose.yaml"},
+    {"kind":"code","ref":"deploy/server.env.example"},
+    {"kind":"code","ref":"deploy/install.test.sh"},
+    {"kind":"code","ref":"deploy/README.md"},
+    {"kind":"code","ref":"install.sh"},
+    {"kind":"code","ref":"crates/registry/src/schema/structs_impl.rs"},
+    {"kind":"code","ref":"resources/schema/schema.json.gz"},
+    {"kind":"code","ref":"resources/schema/schema.json.sha256"},
+    {"kind":"code","ref":"crates/common/src/config/mailstore/spamfilter.rs"},
+    {"kind":"code","ref":"crates/common/src/config/smtp/session.rs"},
+    {"kind":"code","ref":"crates/smtp/src/inbound/spawn.rs"},
+    {"kind":"code","ref":"crates/imap/src/lib.rs"},
+    {"kind":"code","ref":"crates/imap/src/op/logout.rs"},
+    {"kind":"code","ref":"ui/src/lib/catalog/login/Login.svelte"},
+    {"kind":"code","ref":"ui/src/routes/(account)/login/+page.svelte"},
+    {"kind":"code","ref":"crates/http/src/setup.rs"},
+    {"kind":"code","ref":"crates/common/src/auth/authentication.rs"},
+    {"kind":"code","ref":"tests/src/system/authentication.rs"},
+    {"kind":"code","ref":"crates/store/src/registry/query.rs"},
+    {"kind":"code","ref":"crates/common/src/cache/principals.rs"},
+    {"kind":"code","ref":"crates/registry/src/schema/structs.rs"},
+    {"kind":"code","ref":"ui/src/lib/shippin/admin/SetupAdmin.svelte"},
+    {"kind":"web","ref":"https://stalw.art/docs/ref/object/spam-settings/"},
+    {"kind":"web","ref":"https://github.com/stalwartlabs/spam-filter"}
+  ],
+  "concerns": [
+    "The verified rules feed is still externally maintained. Repairing the typo does not establish owned rules or code independence.",
+    "Persisted defaults must be handled without overwriting custom URLs, disabled downloads or custom greetings.",
+    "Creating directories in Rust alone does not give the non-root container permission under /var/log.",
+    "Account schema requires a domain. Server-only administrator versus explicitly chosen mailbox domain is awaiting owner clarification; do not silently invent an identity model.",
+    "Short-name authentication must never guess between multiple accounts across domains or bypass MFA, permissions and app-password validation.",
+    "No Docker engine is available locally. Live installation, protocol, recovery and non-root volume checks remain unverified until run on a disposable candidate."
+  ],
+  "context": "Baseline e952af3469919c7519b3b82468f5ccae4ae88837 on main. PostgreSQL install support exists; runtime parity and independence remain open.",
+  "current_state": "Bad generated spam URL, absent log directory creation and container ownership, old protocol greetings, missing host ManageSieve mapping, inconsistent login labels, implicit setup domain creation and default-domain-only short-name resolution.",
+  "target_design": "Working configurable rule downloads; writable persistent file logging; ShippinTECH protocol display text; configurable ManageSieve TCP publication; consistent account-name login and explicit setup identity semantics.",
+  "changes": [
+    "Correct the known invalid spam feed default and only that persisted typo; align SMTP schema/default/fallback and IMAP branding.",
+    "Create log directories with error reporting and provision container ownership plus persistent log volume.",
+    "Publish ManageSieve 4190 using the existing mail bind policy and document firewall/port overrides.",
+    "Repair the observed candidate image build blocker: pin the FoundationDB client to bundled server version 7.4.6 and verify its published checksum instead of selecting from the moving releases API. Product release/version remains unchanged.",
+    "Run focused Rust regression tests in Linux CI, including the short-name integration case whose Windows build is blocked by missing OpenSSL development libraries.",
+    "Use Account name consistently throughout password sign-in.",
+    "Resolve setup identity clarification before changing account creation.",
+    "Preserve existing default-domain directory and account short-name routing; when neither applies, use an exact indexed User name lookup, require a unique match, and qualify it before the existing credential/MFA/permission checks. Unknown names retain default-directory behavior; ambiguous non-default names require full addresses."
+  ],
+  "boundaries": [
+    "No release tags, real-user mail, PRs, global rebranding or unrelated engine rewrites.",
+    "Keep PostgreSQL default and FoundationDB scale profiles, existing protocol capabilities, custom settings and authentication checks.",
+    "No claim that a repaired external feed makes the product independent."
+  ],
+  "verification": [
+    {"name":"Rust runtime checks","command":"cargo test -p common --lib --locked; cargo check -p shippin-tech --locked --no-default-features --features postgres,s3,nats,enterprise","proves":"Common runtime unit suite including new directory creation/append/error and targeted persisted-default tests; application compile","expected":"Pass; report actual build or execution failures","result":"161 common unit tests passed, zero failures. PostgreSQL/S3/NATS/enterprise application check passed. An extra common-only --features enterprise invocation failed because that standalone feature selection omits store/enterprise; no product code was changed to hide it. Supported application profile compiles."},
+    {"name":"Short-name integration","command":"STORE=Sqlite cargo test -p tests --locked --no-default-features --features sqlite install_defects_short_names -- --nocapture","proves":"Real account creation, unique other-domain login, group exclusion, ambiguous-name refusal, full-address access, default-domain precedence and no password fallback across accounts","expected":"Pass on disposable SQLite test server","result":"Windows compilation blocked by missing OpenSSL development libraries before test execution. Added this test to Linux Check workflow with OpenSSL packages; execution pending."},
+    {"name":"Whole web and deployment gate","command":"python scripts/regression.py --only web","proves":"All UI contracts, checks, unit/browser suites and deployment harnesses continue to pass","expected":"No new failures; missing live gates stay unverified","result":"18 passed, zero failed, one not-run (relay requires POSIX permissions), ten live/engine steps omitted. Includes 289 unit tests, 12 mocked browser tests, zero Svelte errors/warnings, static build, registry, lint, API/inventory/MCPL and installer/update/backup/host harnesses. Runner exits 1 correctly for missing coverage. Evidence: ignored roadmap/regression-results.partial.json, baseline e952af3 plus working changes; recorded old image identity is not candidate runtime proof."},
+    {"name":"Compose and schema configuration","command":"Compose config --format json for bundled,postgres and bundled,foundationdb; validate schema gzip digest/defaults and CI YAML","proves":"Both storage selections retain the host port/log mount and embedded schema matches runtime defaults","expected":"4190 mapped under the configured mail bind; node-logs mounted at /var/log/shippin.tech","result":"Both profiles validated with Compose 5.8.0: 0.0.0.0:4190 to container 4190 and node-logs mount present. Schema digest and corrected SMTP/spam defaults validated; CI YAML parsed. Operating-record checker passed: 6 modules, 56 documents."},
+    {"name":"Pinned build dependency","command":"Download official FoundationDB 7.4.6 amd64 client and compare SHA-256","proves":"Replacement download exists and matches published checksum","expected":"Pinned client matches bundled server; no moving API query","result":"Downloaded amd64 package matches 7e29df033c3d1d27701d094651cf87a36fa5b0afc2896c8e4aaf47f549e68365. ARM64 asset existence verified through official GitHub release metadata; ARM64 build unverified."},
+    {"name":"Live disposable installation","command":"Build candidate image and run live first-run, mail protocol, log and recovery checks","proves":"Actual integrated behavior under non-root Linux container","expected":"Required before live parity can be claimed","result":"Pending: local Docker engine unavailable. Previous candidate's FoundationDB download failure addressed and downloaded package verified, but complete candidate build/install remains unverified. Setup domain/identity change awaits owner choice; this plan remains draft rather than claiming all five reports resolved."}
+  ],
+  "status": "draft"
+}

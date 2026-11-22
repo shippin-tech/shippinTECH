@@ -34,6 +34,7 @@ jobs:
               - 'Cargo.lock'
               - '.cargo/**'
               - 'resources/**'
+              - 'tests/**'
 
   web:
     name: brand + portal
@@ -116,11 +117,17 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler clang cmake
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler clang cmake libssl-dev pkg-config
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: cargo check (same feature set as the image)
         run: cargo check -p shippin-tech --no-default-features --features "sqlite postgres mysql rocks s3 redis azure nats enterprise"
+      - name: Install defect runtime regressions
+        run: cargo test -p common --locked --lib install_defects
+      - name: Short-name authentication and account isolation
+        env:
+          STORE: Sqlite
+        run: cargo test -p tests --locked --no-default-features --features sqlite install_defects_short_names -- --nocapture
 
   # Pre-release there are no pull requests: main takes every change and this run is the gate.
   # A red run is loud (annotation, summary, the pusher's failure email) and is fixed forward on main.

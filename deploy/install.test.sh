@@ -18,6 +18,9 @@ for backend in postgres foundationdb; do
   grep -qx "SHIPPIN_STORAGE=$backend" "$dir/server.env"
   grep -qx "COMPOSE_PROFILES=bundled,$backend" "$dir/server.env"
   [[ -f "$dir/backend.sh" ]]
+  grep -qx 'MANAGESIEVE_HOST_PORT=4190' "$dir/server.env"
+  grep -Fq '${MAIL_BIND:-127.0.0.1}:${MANAGESIEVE_HOST_PORT:-4190}:4190' "$dir/compose.yaml"
+  grep -Fq 'node-logs:/var/log/shippin.tech' "$dir/compose.yaml"
   if [[ "$backend" == postgres ]]; then
     grep -q '"@type": "PostgreSql"' "$dir/config.json"
     grep -q '"variableName": "SHIPPIN_POSTGRES_PASSWORD"' "$dir/config.json"

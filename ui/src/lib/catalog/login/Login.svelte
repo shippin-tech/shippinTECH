@@ -67,7 +67,7 @@
 	{#if !closed}
 	{#if variant !== 'otp'}
 		<label>
-			{variant === 'account' ? 'Account name' : 'Username'}
+			Account name
 			<input
 				name="username"
 				type="text"

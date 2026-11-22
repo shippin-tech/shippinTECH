@@ -23,6 +23,46 @@ use std::{
     time::Duration,
 };
 
+// Existing installs can retain the previously shipped expression. Do not rewrite
+// administrator-defined greetings or conditional expressions.
+fn repair_shipped_greeting(connect: &mut MtaStageConnect) {
+    if connect.smtp_greeting.match_.is_empty()
+        && matches!(
+            connect.smtp_greeting.else_.as_str(),
+            "system('hostname') + ' shippin.tech ESMTP at your service'"
+                | "system('hostname') + ' Stalwart ESMTP at your service'"
+        )
+    {
+        connect.smtp_greeting = MtaStageConnect::default().smtp_greeting;
+    }
+}
+
+#[cfg(test)]
+mod install_defects_tests {
+    use super::*;
+    use registry::schema::structs::ExpressionMatch;
+
+    #[test]
+    fn repair_shipped_greetings_but_preserve_custom_expressions() {
+        for brand in ["shippin.tech", "Stalwart"] {
+            let mut connect = MtaStageConnect::default();
+            connect.smtp_greeting.else_ = format!("system('hostname') + ' {brand} ESMTP at your service'");
+            let mut conditional = connect.clone();
+            conditional.smtp_greeting.match_.push(ExpressionMatch { if_: "true".into(), then: "'custom'".into() });
+            let original = conditional.clone();
+            repair_shipped_greeting(&mut conditional);
+            assert_eq!(conditional, original);
+            repair_shipped_greeting(&mut connect);
+            assert_eq!(connect.smtp_greeting.else_, "system('hostname') + ' ShippinTECH ESMTP at your service'");
+        }
+        let mut connect = MtaStageConnect::default();
+        connect.smtp_greeting.else_ = "'Private SMTP service'".into();
+        let original = connect.clone();
+        repair_shipped_greeting(&mut connect);
+        assert_eq!(connect, original);
+    }
+}
+
 #[derive(Clone)]
 pub struct SessionConfig {
     pub timeout: IfBlock,
@@ -173,7 +213,8 @@ pub enum Stage {
 impl SessionConfig {
     pub async fn parse(bp: &mut Bootstrap) -> Self {
         let session = bp.setting_infallible::<MtaInboundSession>().await;
-        let connect = bp.setting_infallible::<MtaStageConnect>().await;
+        let mut connect = bp.setting_infallible::<MtaStageConnect>().await;
+        repair_shipped_greeting(&mut connect);
         let auth = bp.setting_infallible::<MtaStageAuth>().await;
         let ehlo = bp.setting_infallible::<MtaStageEhlo>().await;
         let mail = bp.setting_infallible::<MtaStageMail>().await;

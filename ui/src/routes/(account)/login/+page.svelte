@@ -117,11 +117,11 @@
 		if (closed) return;
 		if (missingRedirect) {
 			if (variant === 'account') {
-				// Mailboxes sign in with their address; the server's own administrator
-				// (the first-run "admin" or RECOVERY_ADMIN) has a plain name.
+				// Accounts accept a full address or a resolvable short name, including
+				// the first-run "admin" and the configured recovery administrator.
 				if (!fields.username.trim()) {
 					alertKind = 'error';
-					alert = 'Enter your email address, or admin for the server administrator.';
+					alert = 'Enter your account name or email address.';
 					return;
 				}
 				pending = true;
@@ -158,7 +158,7 @@
 		} else {
 			if (!fields.username || !fields.password) {
 				alertKind = 'error';
-				alert = 'Please enter your username and password.';
+				alert = 'Please enter your account name and password.';
 				return;
 			}
 			if (device && !fields.deviceCode.trim()) {
@@ -194,7 +194,7 @@
 				title = device ? 'Authorize device' : 'Sign in';
 				subtitle = device ? 'Sign in to approve this device.' : 'Enter your credentials to continue';
 				alertKind = 'error';
-				alert = 'Invalid username or password. Please try again.';
+				alert = 'Invalid account name or password. Please try again.';
 				return;
 			}
 			alertKind = 'error';

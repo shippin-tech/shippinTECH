@@ -41,8 +41,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -r -g 2000 shippin.tech && \
     useradd -r -u 2000 -g 2000 -s /usr/sbin/nologin -M shippin.tech && \
-    mkdir -p /etc/shippin.tech /var/lib/shippin.tech && \
-    chown shippin.tech:shippin.tech /etc/shippin.tech /var/lib/shippin.tech
+    mkdir -p /etc/shippin.tech /var/lib/shippin.tech /var/log/shippin.tech && \
+    chown shippin.tech:shippin.tech /etc/shippin.tech /var/lib/shippin.tech /var/log/shippin.tech
 COPY --from=builder --chmod=0755 /output/shippin-tech /usr/local/bin/shippin.tech
 COPY --from=portal --chown=shippin.tech:shippin.tech /src/ui/build /usr/share/shippin.tech/portal
 RUN setcap 'cap_net_bind_service=+ep' /usr/local/bin/shippin.tech

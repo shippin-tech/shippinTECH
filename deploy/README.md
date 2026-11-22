@@ -109,14 +109,28 @@ docker compose --env-file server.env exec mail cat /var/lib/shippin.tech/setup-k
 break-glass login. When it is set, no setup key is printed and `admin` signs
 in with that password instead. It is not needed for normal operation.
 
+Sign-in accepts full addresses. A short account name keeps its existing
+default-domain directory/account route; if neither is configured there, it resolves a unique
+user on another domain. When multiple other domains have that user name, use the
+full address. A wrong password is never retried against another account.
+
+Spam-filter rule downloads use the configurable external feed at
+`https://github.com/stalwartlabs/spam-filter/releases/latest/download/spam-filter-rules.json.gz`.
+The previously shipped `shippin.techlabs` typo is corrected when settings load;
+custom feed URLs and disabled downloads are preserved. This feed remains an
+external dependency, not a shippinTECH-owned rule distribution.
+
 ### Before people use it
 
 1. **DNS:** an A record (and AAAA for IPv6) for the host name pointing at the
    server, and reverse DNS for the server's IP set to the same name at your
    hosting provider. Each mail domain's own records are listed in the portal and,
    for free-plan customers, on `/manage`.
-2. **Firewall:** allow TCP 25, 465, 587, 993 and 443 in, and outbound TCP 25.
-   Port 8080 stays on loopback.
+2. **Firewall:** allow TCP 25, 465, 587, 993, 4190 and 443 in, and outbound TCP 25.
+   Port 4190 is ManageSieve (inbox-filter management with STARTTLS); override its
+   host port with `MANAGESIEVE_HOST_PORT` in `server.env`. It follows `MAIL_BIND`.
+   Port 8080 stays on loopback. File logs are stored in the persistent `node-logs`
+   volume at `/var/log/shippin.tech`, owned by the container's server user.
 3. **TLS certificate:** until one is issued, mail apps see the server's own
    certificate and warn. In the admin panel, open **Security → TLS certificates**
    (`/shippin/admin/tls`). Add an ACME provider (Let's Encrypt, challenge type

@@ -425,3 +425,54 @@ pub async fn validate_token_with_ip(token: &str, remote_ip: &str, is_valid: bool
         );
     }
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn install_defects_short_names_route_without_cross_account_fallback() {
+    use crate::utils::server::TestServerBuilder;
+    use common::auth::AuthRequest;
+
+    let test = TestServerBuilder::new("install_defects_short_names")
+        .await
+        .with_http_listener(18897)
+        .await
+        .build()
+        .await;
+    let admin = test.account("admin");
+    let first = admin.create_user_account(
+        "unique@other.test", "first independent account secret", "First", &[], vec![],
+    ).await;
+    let auth = |name: &str, secret: &str| AuthRequest::from_plain(
+        name, secret, 0, "127.0.0.1".parse().unwrap(),
+    );
+    for name in ["unique", "UNIQUE", "unique@other.test"] {
+        let token = test.server.authenticate(&auth(name, first.secret())).await.unwrap();
+        assert_eq!(token.account_id(), first.id().document_id());
+    }
+    assert!(test.server.authenticate(&auth("unique", "wrong password")).await.is_err());
+
+    // A same-name group is not an authentication candidate.
+    let group = admin.create_group_account("unique@group.test", "Group", &[]).await;
+    assert_eq!(test.server.authenticate(&auth("unique", first.secret())).await.unwrap().account_id(), first.id().document_id());
+
+    let second = admin.create_user_account(
+        "unique@another.test", "second independent account secret", "Second", &[], vec![],
+    ).await;
+    // Neither password resolves an ambiguous name. Full addresses still work.
+    for user in [&first, &second] {
+        assert!(test.server.authenticate(&auth("unique", user.secret())).await.is_err());
+        assert_eq!(test.server.authenticate(&auth(user.name(), user.secret())).await.unwrap().account_id(), user.id().document_id());
+    }
+
+    // Existing default-domain behavior wins; a failed password is not tried
+    // against the same name on another domain.
+    let default = admin.create_user_account(
+        "unique@example.org", "default independent account secret", "Default", &[], vec![],
+    ).await;
+    assert_eq!(test.server.authenticate(&auth("unique", default.secret())).await.unwrap().account_id(), default.id().document_id());
+    assert!(test.server.authenticate(&auth("unique", first.secret())).await.is_err());
+    assert!(test.server.authenticate(&auth("absent", first.secret())).await.is_err());
+
+    admin.registry_destroy(ObjectType::Account, [first.id(), second.id(), default.id(), group.id()]).await;
+    test.shutdown();
+    test.cleanup().await;
+}

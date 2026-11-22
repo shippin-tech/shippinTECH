@@ -237,13 +237,41 @@ impl SpamFilterConfig {
                 spam_threshold: spam.score_spam.into_inner() as f32,
             },
             grey_list_expiry: spam.greylist_for.map(|d| d.into_inner().as_secs()),
-            spam_rules_url: spam.spam_filter_rules_url,
+            spam_rules_url: repaired_spam_rules_url(spam.spam_filter_rules_url),
             url_client: utils::http::http_client_builder(true)
                 .pool_max_idle_per_host(0)
                 .redirect(reqwest::redirect::Policy::none())
                 .user_agent("Mozilla/5.0 (X11; Linux i686; rv:109.0) Gecko/20100101 Firefox/118.0")
                 .build()
                 .unwrap_or_default(),
+        }
+    }
+}
+
+// Repair only the invalid URL shipped by this fork. Custom feeds and an explicit
+// None (downloads disabled) remain untouched. The external feed is not owned code.
+fn repaired_spam_rules_url(url: Option<String>) -> Option<String> {
+    if url.as_deref()
+        == Some("https://github.com/shippin.techlabs/spam-filter/releases/latest/download/spam-filter-rules.json.gz")
+    {
+        SpamSettings::default().spam_filter_rules_url
+    } else {
+        url
+    }
+}
+
+#[cfg(test)]
+mod install_defects_tests {
+    use super::*;
+
+    #[test]
+    fn repair_only_the_invalid_shipped_feed() {
+        assert_eq!(
+            repaired_spam_rules_url(Some("https://github.com/shippin.techlabs/spam-filter/releases/latest/download/spam-filter-rules.json.gz".into())),
+            Some("https://github.com/stalwartlabs/spam-filter/releases/latest/download/spam-filter-rules.json.gz".into())
+        );
+        for url in [None, Some("https://rules.example.test/custom.json.gz".into())] {
+            assert_eq!(repaired_spam_rules_url(url.clone()), url);
         }
     }
 }

@@ -11,7 +11,7 @@ impl<T: SessionStream> Session<T> {
         let op_start = Instant::now();
 
         let mut response =
-            StatusResponse::bye("shippin.tech IMAP4rev2 bids you farewell.".to_string()).into_bytes();
+            StatusResponse::bye("ShippinTECH IMAP4rev2 bids you farewell.".to_string()).into_bytes();
 
         trc::event!(
             Imap(trc::ImapEvent::Logout),

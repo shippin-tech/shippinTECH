@@ -51,6 +51,7 @@ services:
       - ./config.json:/etc/shippin.tech/seed.json:ro
       - fdb-config:/var/fdb
       - node-data:/var/lib/shippin.tech
+      - node-logs:/var/log/shippin.tech
       # Empty until bash relay.sh enable. The key file is not baked into the image.
       - ./secrets/relay:/run/secrets/relay:ro
     ports:
@@ -59,6 +60,7 @@ services:
       - "${MAIL_BIND:-127.0.0.1}:${SMTPS_HOST_PORT:-465}:465"
       - "${MAIL_BIND:-127.0.0.1}:${SUBMISSION_HOST_PORT:-587}:587"
       - "${MAIL_BIND:-127.0.0.1}:${IMAPS_HOST_PORT:-993}:993"
+      - "${MAIL_BIND:-127.0.0.1}:${MANAGESIEVE_HOST_PORT:-4190}:4190"
       - "${HTTPS_BIND:-127.0.0.1}:${HTTPS_HOST_PORT:-443}:443"
     logging:
       driver: json-file
@@ -194,6 +196,7 @@ services:
 volumes:
   postgres-data:
   node-data:
+  node-logs:
   fdb-config:
   fdb-data:
   fdb-logs:

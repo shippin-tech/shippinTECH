@@ -126,7 +126,7 @@ impl<T: SessionStream> Session<T> {
             .await
             .filter(|g| !g.is_empty())
             .map(|g| format!("220 {}\r\n", g))
-            .unwrap_or_else(|| "220 shippin.tech ESMTP at your service.\r\n".to_string());
+            .unwrap_or_else(|| "220 ShippinTECH ESMTP at your service.\r\n".to_string());
 
         if self.write(greeting.as_bytes()).await.is_err() {
             return false;

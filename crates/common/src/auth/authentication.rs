@@ -13,14 +13,19 @@ use directory::{
     Credentials, Directory, Recipient,
     core::secret::{SecretVerificationResult, verify_mfa_secret_hash, verify_secret_hash},
 };
-use registry::schema::{
-    enums::Permission,
-    structs::{self, Credential},
+use registry::{
+    schema::{
+        enums::{AccountType, Permission},
+        prelude::{ObjectType, Property},
+        structs::{self, Credential},
+    },
+    types::EnumImpl,
 };
 use serde::Deserialize;
 use std::{borrow::Cow, net::IpAddr, sync::Arc};
-use store::write::now;
+use store::{registry::RegistryQuery, write::now};
 use trc::AddContext;
+use types::id::Id;
 
 pub struct UsernameParts {
     pub account: Username,
@@ -124,10 +129,10 @@ impl Server {
                     };
                 }
 
-                // Add domain if missing, use the default domain
-                self.add_missing_domain(&mut username.account);
+                // Qualify short names before the existing credential checks.
+                self.add_missing_domain(&mut username.account).await?;
                 if let Some(master_user) = &mut username.master_user {
-                    self.add_missing_domain(master_user);
+                    self.add_missing_domain(master_user).await?;
                 }
 
                 // Obtain domain
@@ -479,16 +484,46 @@ impl Server {
         }
     }
 
-    fn add_missing_domain(&self, address: &mut Username) {
-        if address.domain().is_none() {
-            trc::event!(
-                Auth(trc::AuthEvent::Warning),
-                AccountName = address.address().to_string(),
-                Reason = "No domain in username",
-            );
-            address.domain_start = address.name.len() + 1;
-            address.name = format!("{}@{}", address.name, self.core.email.default_domain_name);
+    async fn add_missing_domain(&self, address: &mut Username) -> trc::Result<()> {
+        if address.domain().is_some() {
+            return Ok(());
         }
+
+        // Keep the existing default-domain route, including its directory and aliases. A short
+        // name that previously authenticated must not start selecting another user.
+        let default = &self.core.email.default_domain_name;
+        if let Some(domain) = self.domain(default).await?
+            && (self.get_directory_for_cached_domain(&domain).is_some()
+                || self.account_id_from_parts(address.address(), domain.id).await?.is_some())
+        {
+            address.with_domain(default);
+            return Ok(());
+        }
+
+        // Name is an exact search index (Text is the tokenized index). Do not limit
+        // each filter before intersecting: groups may share a user's local name.
+        let ids = self.registry().query::<Vec<Id>>(
+            RegistryQuery::new(ObjectType::Account)
+                .equal(Property::Name, address.address())
+                .equal(Property::Type, AccountType::User.to_id()),
+        ).await?;
+        match ids.as_slice() {
+            [] => address.with_domain(default), // Preserve external-directory routing.
+            [id] => {
+                let domain = match self.registry().object::<structs::Account>(*id).await? {
+                    Some(structs::Account::User(account)) => {
+                        self.domain_by_id(account.domain_id.document_id()).await?
+                    }
+                    _ => None,
+                };
+                let name = domain.as_ref().and_then(|domain| domain.names.first())
+                    .ok_or_else(|| trc::AuthEvent::Failed.into_err().reason("Account domain not found"))?;
+                address.with_domain(name);
+            }
+            _ => return Err(trc::AuthEvent::Failed.into_err()
+                .reason("Ambiguous account name; use a full address")),
+        }
+        Ok(())
     }
 
     async fn build_directory_token(
@@ -667,6 +702,12 @@ impl UsernameParts {
 }
 
 impl Username {
+    fn with_domain(&mut self, domain: &str) {
+        self.domain_start = self.name.len() + 1;
+        self.name.push('@');
+        self.name.push_str(domain);
+    }
+
     pub fn address(&self) -> &str {
         self.name.as_str()
     }

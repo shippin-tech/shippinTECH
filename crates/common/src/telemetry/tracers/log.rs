@@ -64,6 +64,15 @@ pub(crate) fn spawn_log_tracer(builder: SubscriberBuilder, settings: LogTracer) 
 
 impl LogTracer {
     pub async fn build_writer(&self) -> Option<BufWriter<File>> {
+        if let Err(err) = tokio::fs::create_dir_all(&self.path).await {
+            trc::event!(
+                Telemetry(TelemetryEvent::LogError),
+                Details = "Failed to create log directory",
+                Path = self.path.clone(),
+                Reason = err.to_string(),
+            );
+            return None;
+        }
         let now = DateTime::from_timestamp(
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -133,5 +142,39 @@ impl LogTracer {
             RotationStrategy::Minutely => now.to_timestamp() as u64 + 60,
             RotationStrategy::Never => 0,
         }
+    }
+}
+
+#[cfg(test)]
+mod install_defects_tests {
+    use super::*;
+    use tokio::io::AsyncWriteExt;
+
+    #[tokio::test]
+    async fn missing_log_directories_are_created_and_existing_logs_are_appended() {
+        let root = std::env::temp_dir().join(format!(
+            "shippin-log-test-{}-{}",
+            std::process::id(),
+            SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        let path = root.join("nested/logs");
+        let mut settings = LogTracer {
+            path: path.to_string_lossy().into_owned(),
+            prefix: "server.log".into(),
+            rotate: RotationStrategy::Never,
+            ansi: false,
+            multiline: false,
+        };
+        for line in [b"first\n", b"again\n"] {
+            let mut writer = settings.build_writer().await.expect("writable directory");
+            writer.write_all(line).await.unwrap();
+            writer.flush().await.unwrap();
+        }
+        let file = path.join("server.log");
+        assert_eq!(tokio::fs::read(&file).await.unwrap(), b"first\nagain\n");
+        settings.path = file.join("not-a-directory").to_string_lossy().into_owned();
+        assert!(settings.build_writer().await.is_none());
+        assert_eq!(tokio::fs::read(&file).await.unwrap(), b"first\nagain\n");
+        tokio::fs::remove_dir_all(root).await.unwrap();
     }
 }
