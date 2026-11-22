@@ -6,6 +6,28 @@ heads and current uncommitted work. No other project's history is included.
 This is the prerequisite to [ROADMAP.md](../../ROADMAP.md), not a new product plan.
 Product implementation remains stopped at the owner's instruction.
 
+## Current refresh ? 2026-11-22
+
+The original audit below remains historical evidence. At `19c4409`, all 53 recorded
+source heads plus current main cover **257/257 stored commits**, with zero uncovered.
+All 40 refs remain, including 32 checkpoints; no active stash, one worktree. The
+retained remote branch is now 14 commits behind and has zero unique commits.
+The two dropped stashes remain represented by the original source ledger; no stash
+or branch was applied or deleted in this pass.
+
+[current-audit.json](current-audit.json) records the exact refs and stored commit IDs.
+[current-review.csv](current-review.csv) preserves every original review row with the
+current blob, exact-content destination when found, and an execution-card assignment.
+There are **3,193 open reviews**, including 37 exact blob matches; no behavioral
+absorption is inferred from matching bytes. Routing is mechanical by path/packet;
+reviewers must confirm the target card and record semantic evidence before closure.
+
+Five later commits are now accounted for: `65a5805` history planning, `7553600`
+People/API, `e952af3` PostgreSQL install/recovery, `1b39550` install defects and
+`19c4409` system-domain/root. R8's product checkpoint is committed; its old
+uncommitted wording below is historical. Broader R2?R7 absorption remains open.
+The execution handoff is [../execution.csv](../execution.csv), not a second roadmap.
+
 ## What the evidence establishes
 
 **The existing base was carried into the public baseline.** The last recovered

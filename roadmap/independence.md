@@ -1,7 +1,7 @@
 # Independence ledger
 
 The source and dependency record for A2, A3 and A5 of [ROADMAP.md](../ROADMAP.md),
-updated 2026-11-21. Reuse the existing shippinTECH implementations before specifying
+updated 2026-11-22. Reuse the existing shippinTECH implementations before specifying
 new replacements. Each actual replacement records files, baseline behavior, tests
 and the removal commit. Missing test evidence means unverified, not automatically
 unwritten: the earlier squashed-baseline classification cannot establish authorship.
@@ -16,6 +16,44 @@ after that reconciliation and the owner's implementation freeze have been resolv
 Measured inventory: [PROVENANCE.md](../PROVENANCE.md). Rules: [REGRESSION.md](../REGRESSION.md). A replacement
 is written from the published specification and the product's own requirements. The original is the baseline to
 compare against, not text to be paraphrased; it stays until the oracle passes and goes in its own commit.
+
+## Current executable work ? 2026-11-22
+
+[execution.csv](execution.csv) expands the D1?D11 map into 17 bounded cards,
+including existing-work absorption, owner claim, external feeds, source closure,
+Svelte parity and final qualification. [current-review.csv](reconciliation/current-review.csv)
+assigns all 3,193 historical review inputs without claiming they have been resolved.
+The inputs/reuse/delta/proof/completion columns are the implementation handoff.
+
+**First feature cut:** D1/D2/D3/D9 are one configuration-and-consumer retirement
+boundary. Ordinary packaged builds must exercise it without `test_mode`, a synthetic
+license, or a recovery-admin override. Current integration tests can receive a test
+license and therefore cannot establish removal of the runtime coupling.
+
+**D0 claim contract:** local installer authority claims `root@system.local` with
+hidden password entry/confirmation (or an explicit unattended secret input), reusing
+current validation and root creation. Define durable unclaimed/claimed state separately
+from temporary key presence and recovery credentials. The claim is one-time and
+concurrency-safe; an interrupted attempt is resumable without replacing an existing
+administrator. No secret in process arguments, logs or URLs. Root manages the server;
+real domains/mailboxes remain independent. Final success means normal sign-in works.
+Test weak input, failure/retry, simultaneous claims, restart, repeat claim and optional
+recovery configuration. Do not expose an anonymous first-visitor-wins public takeover.
+The internal transport/authority implementation is authored in D0; no new public
+compatibility endpoint is mandated by this planning document.
+
+**D12 external inputs:** the current spam-filter URL is the working upstream feed;
+fixing its typo did not make rule distribution independent. Inventory actual build
+and runtime downloads, author permitted/owned replacements and prove rule behavior.
+Classify inert legacy strings separately from active dependencies.
+
+**Source completion:** retained own source, permitted attributed dependencies and
+independent replacements are different outcomes. Rename/translation/edit volume is
+not a release criterion: modifying covered source does not itself remove its license
+conditions ([GNU FAQ](https://www.gnu.org/licenses/gpl-faq.html)). No waiver is assumed
+or requested. Unresolved origins stay explicit; preserve notices until resolved.
+This plan supplies an engineering separation process, not a claim that the current
+repository is license-free.
 
 ## Remaining runtime dependency map — inspected 2026-11-21
 
@@ -54,8 +92,9 @@ dependency. None of these tasks is fulfilled by changing product names or header
 
 - Existing Svelte and own Rust implementations are real source in the repository;
   they are reuse targets, not a reason to commission their rewrites again.
-- The pending People/API consumer changes passed 289 unit tests and 12 mocked
-  browser tests in the full web run. They remain uncommitted and live-unverified.
+- People/API consumer changes are committed as `7553600`; the current anchor is
+  `19c4409`. Its full web gate has 289 unit tests and 13 mocked browser tests.
+  Packaged live behavior remains a separate gate; do not redo this committed work.
 - The failing license stub is a concrete runtime coupling. Removing that coupling
   is required, but does not establish authorship of the rest of the Rust engine.
 - The squashed provenance inventory cannot tell how much pre-baseline code was

@@ -18,6 +18,24 @@ where required by ROADMAP A6. This update does not mark any open row Done or Wai
 
 Branches, checked 2026-11-10: `shippin-tech/shippin-tech` and `shippin-tech/landing` each have one branch, `main`, fully pushed. A fresh clone fetches the landing submodule at the recorded commit.
 
+## Current candidate evidence boundary ? 2026-11-22
+
+Candidate `19c4409` passed Check and the candidate container build. PostgreSQL/SQLite
+bootstrap and identity lifecycle passed in the integration harness. Whole packaged
+multi-tenant mail, directory parity, recovery, and independent-source closure have
+not been established by those checks. The harness can supply a synthetic Enterprise
+license; the shipped build does not. F0?F11 historical Done rows describe the dated
+workflows stated in those rows, not blanket parity with wider inherited behavior.
+In particular org management is not all tenant-owned DKIM/directory/report behavior;
+OIDC-only is not LDAP parity; eq-only SCIM is not broader provisioning parity.
+
+ROADMAP section 2a and `roadmap/execution.csv` govern the remaining work. Owner claim
+at install (D0), runtime feature separation (D1?D9), direct application API/schema
+(D10), filtering/source/external dependency closure (D11?D13), and packaged full
+qualification remain open. This update changes no release version/tag/channel and
+marks no item Done or Waived. The older order-of-work paragraph below is historical;
+use the current ROADMAP sequence.
+
 ## A. Blockers found by testing
 
 | Id | Item | Done when | Status |

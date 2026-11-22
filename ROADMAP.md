@@ -1,6 +1,6 @@
 # shippinTECH alpha execution plan
 
-Owner direction, 2026-11-21. **This is the single execution order.** It supersedes
+Owner direction, refreshed 2026-11-22. **This is the single execution order.** It supersedes
 older sequencing in `PLAN.md`, porting work packages, dated plans and Cursor rules.
 [REGRESSION.md](REGRESSION.md) defines acceptance; [RELEASE.md](RELEASE.md) controls
 tags. This is pre-release engineering on disposable installs.
@@ -42,29 +42,68 @@ flowchart TD
   Rust --> Services[Service adapters: campaigns and future services]
 ```
 
-## 2. Verified starting point
+## 2. Current audited baseline ? 2026-11-22
 
-This table records observations from this session, not a claim of alpha completion.
-The [history reconciliation plan](roadmap/reconciliation/README.md) now accounts for
-every available branch, checkpoint, dropped stash and intermediate commit. Its
-source-based review gate precedes all implementation packages below.
+Audit anchor: `19c4409e97a89ab1c40716dab49ed9ee59d5dd32`. This refresh replaces the
+stale November 21 status table, not the existing product or its implementation.
+The executable cards are [roadmap/execution.csv](roadmap/execution.csv); every
+historical review is assigned in [current-review.csv](roadmap/reconciliation/current-review.csv).
+The evidence snapshot is [current-audit.json](roadmap/reconciliation/current-audit.json).
 
-| Item | Observed state |
+| Item | Verified observation / remaining work |
 | --- | --- |
-| Main | Audited local and remote `main` both at `7976eae9a96bb3034972dd49a7aea77221f67f32`. |
-| Other remote branch | `cursor/production-deploy-parity-c403` at `b09dbc3` is **9 commits behind audited main, 0 unique commits**. Live remote heads verified; no merge is required. No branch was deleted. |
-| Historical continuity | Recovered development tip `6c4e00f` and public root `6693b60` have the exact same tree. All 252 stored commits are covered by 53 source records, including 32 checkpoint refs and both dropped stashes. Earlier removals and changed versions have explicit review packets; full behavioral absorption remains open. |
-| Consumer checkpoint | The six People/API files and plan were committed as `7553600`; live API lifecycle remains unverified. |
-| UI checks | Full web run: 18 passed, 0 failed, 1 POSIX-only check not run on Windows. Includes 289 unit tests, 12 mocked browser tests, Svelte check with 0 errors/warnings, lint, build and deployment checks. Live/engine steps were omitted, not passed. |
-| Main CI | [Check for a999153](https://github.com/shippin-tech/shippinTECH/actions/runs/44843695571) passed. That does not verify the uncommitted candidate. |
-| API | Actions, account security and bootstrap use `/api/v1/registry` on main. Pending People/teams work moves its consumer too and rejects private JMAP fallback. `crates/http/src/api/registry_rest.rs` still constructs private JMAP requests internally. |
-| Existing own Rust | `crates/common/src/shippin/` contains AI, branding, calendar templates, Google, keys, masks, organisations, provisioning, recovery, resources, split delivery, SSO, statistics and trace history. Own alert paths also exist in `crates/http/src/shippin/alerts.rs` and `crates/services/src/alerts.rs`. |
-| Remaining EE plumbing | `enterprise/license.rs` always refuses validation/renewal. `enterprise/config.rs`, account-creation checks and the scheduler still consume it. Some old paths can therefore be unavailable; the exact affected feature callers need the A2 mapping. |
-| Storage | New one-host installs default to PostgreSQL; FoundationDB is explicitly selectable. The common image now compiles `scale,postgres,enterprise`; Cargo defaults retain RocksDB and add PostgreSQL. Installer, update, backend refusal and backup tests pass; both Compose profiles validate. Rust `postgres,s3,nats,enterprise` check passes. Local legacy test stack still selects FoundationDB; a live PostgreSQL install/restore drill and scaling transfer remain open. |
-| Live verification | Current candidate has not passed live browser/contract, protocol or storage parity. The temporary parity containers are stopped. Historical ledger results are not current-image results. |
-| Source accounting | `PROVENANCE.md` compares a squashed baseline. Its roughly 96% Rust classification is **not proof of upstream authorship or a reliable estimate of remaining rewrite work**. Preserve already rewritten work while resolving actual origins. |
+| Git | Main is pushed and clean at the audit anchor; one worktree, no active stash. The retained remote branch has 0 unique commits and is 14 behind main. No branch merge is missing. |
+| All available history | Existing 53 historical sources plus current main cover all 257 stored commits; zero uncovered commits. The 32 checkpoint refs and both dropped stashes remain accounted for. Nothing was pruned or blanket-applied. |
+| Absorption | All 3,193 historical review units now have current blob comparison and a specific execution-card assignment. Only 37 have an exact blob elsewhere/currently. All behavioral dispositions remain open; assigning a task is not reviewing its behavior or proving authorship. |
+| Committed work | `7553600` People/API consumer; `e952af3` PostgreSQL-first installer/recovery plumbing; `1b39550` installation defects; `19c4409` reserved identity domain/root separation. These are already in main; do not recreate or recommit them as pending work. |
+| CI / image | [Check](https://github.com/shippin-tech/shippinTECH/actions/runs/45045930859) and [candidate build](https://github.com/shippin-tech/shippinTECH/actions/runs/45059518055) passed for the anchor. Candidate `ghcr.io/shippin-tech/shippintech-scale:sha-19c4409e97a89ab1c40716dab49ed9ee59d5dd32`, Linux amd64; no release change. |
+| Bounded tests | 164 common + 36 HTTP unit tests, 289 UI units, 13 mocked browser tests, full available web/deploy checks including Linux relay; 3 authentication/bootstrap/lifecycle tests each on PostgreSQL and SQLite. These are not whole-product or packaged multi-tenant proofs. |
+| Test-profile limitation | `enterprise/config.rs` supplies a synthetic license under `test_mode`; normal builds without a key return None. `common/config/mod.rs` then clears directories and downgrades some composite storage/telemetry. Packaged no-license tests are mandatory for D1/D2/D3/D9. |
+| Svelte | Existing UI is the base. Its 57-entry source inventory records 3 representative proofs, 29 partial, 4 runtime-replaced, 17 retained assets and 4 pending; this is not full workflow parity. Keep the existing styles/screens. |
+| API | People and other admin consumers use `/api/v1`, but `registry_rest.rs` and setup helpers still dispatch private JMAP methods internally. D10 is an application-operation/schema cut, not another URL rename. |
+| Installation claim | System identity is implemented; installer-to-owner claim is not. Installation still prints a temporary key, requires login, creates root, and asks for login again. D0 defines the minimal replacement. |
+| Source separation | Existing own modules, unresolved application origins, an AGPL Sieve dependency and the upstream spam-rule feed are distinct boundaries. No changed-line percentage or renamed EE symbol proves license independence. |
 
-## 3. Execution order and completion gates
+## 2a. Authored execution contract
+
+This planning pass changes documents and audit data only. Use the existing H0,
+A0?A6 and D1?D11 identifiers; D0 names owner claim, D12 external runtime/build
+inputs, D13 application-source closure, U1 whole UI parity and Q1 qualification.
+The 17 cards name inputs, reuse targets, required authored work, proof and completion.
+
+1. **H0: absorb existing work.** Resolve the 3,193 source/behavior reviews by packet;
+   record retained equivalents or exact recovery, never a blanket branch overwrite.
+   Start the runtime review with the D1/D2/D3/D9 entries and the setup D0 entries.
+   Do not turn their automatic path-based task routing into a completed review.
+2. **Minimal operational correction: D0.** Installer claims the permanent owner using
+   local installation authority and a chosen password; no manual temporary-login
+   journey. This is bounded setup work, not a fleet/control-plane redesign.
+3. **First independence cut: D1 + D2 + D3 + D9 together.** Own capability/configuration,
+   directories/permissions/quotas, telemetry and storage composition. They are one
+   retirement boundary: do not remove old configuration before its consumers pass.
+4. **Finish existing ports: D4?D8.** Masks, recovery, templates/branding, AI spam/script
+   calls and SCIM. Preserve wider baseline operations beyond the current own subsets.
+5. **D10 + U1:** direct Rust application operations and owned schema generation;
+   move existing Svelte/MCP callers per operation family, preserve standard protocols,
+   then remove private admin dispatch. No permanent compatibility layer.
+6. **D11?D13 alongside these cuts:** independent filtering, owned external artifacts,
+   and per-component source closure. Resolve actual origin before scheduling a
+   rewrite. Keep permitted libraries with notices; do not rewrite by author identity.
+7. **Q1:** exact packaged-image proof on PostgreSQL and FoundationDB plus retained
+   backend coverage, independent mail clients, tenant isolation, restart/recovery,
+   backup/restore and scale transfer. Historical green rows are not candidate proof.
+
+H0 remains an open absorption gate; this refresh does not silently waive it. A0 is
+already committed. In each implementation slice, required tests run before the
+superseded path is removed; the final product has one API, not two supported layers.
+Webmail is already in scope. Listmonk/campaign adapters and upstream-reference
+improvements follow separation and cannot displace any current capability.
+
+## 3. Package definitions and completion gates
+
+Sections 2/2a and `roadmap/execution.csv` are the current status and execution
+sequence. The dated sequencing notes below are retained history, not instructions
+to recommit completed A0 work or expand installation before feature separation.
 
 **Owner resumption, 2026-11-21:** the subsequent instruction authorizes committing
 the pending People/API changes and implementing PostgreSQL self-host deployment now.
@@ -137,7 +176,7 @@ existing `crates/store/src/{build,registry,backend/postgres}` and
    optional stores. Set PostgreSQL as the new-install default with explicit scale
    selection. Do not create a second engine or a different feature edition.
 2. Generate a valid PostgreSQL store configuration at install time, resolve secrets
-   through existing mechanisms, and use the existing first-run administrator flow.
+   through existing mechanisms, and complete the D0 installer owner-claim flow.
    Startup must select the requested store explicitly and fail clearly if unavailable.
 3. Local default starts PostgreSQL without requiring FoundationDB. Keep an explicit
    FoundationDB scale profile with the same UI, API, mail behavior and service options.

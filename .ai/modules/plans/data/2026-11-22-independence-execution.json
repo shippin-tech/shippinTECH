@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "id": "2026-11-22-independence-execution",
+  "title": "Reconcile the current base and author the remaining independence execution queue",
+  "costar": {
+    "context": "Owner requests an executable plan over existing work, with no capability loss or additional product implementation in this pass.",
+    "objective": "Refresh the single roadmap and bind every historical review to a concrete execution boundary and acceptance evidence.",
+    "style": "Evidence and bounded task cards",
+    "tone": "Direct",
+    "audience": "Owner and implementing engineers",
+    "response": "Committed planning artifacts; unresolved origin and parity stay open."
+  },
+  "sources": [
+    {
+      "kind": "code",
+      "ref": "ROADMAP.md"
+    },
+    {
+      "kind": "code",
+      "ref": "RELEASE.md"
+    },
+    {
+      "kind": "code",
+      "ref": "REGRESSION.md"
+    },
+    {
+      "kind": "code",
+      "ref": "roadmap/independence.md"
+    },
+    {
+      "kind": "code",
+      "ref": "roadmap/reconciliation/README.md"
+    },
+    {
+      "kind": "code",
+      "ref": "roadmap/reconciliation/sources.csv"
+    },
+    {
+      "kind": "code",
+      "ref": "roadmap/reconciliation/source-disposition.csv"
+    },
+    {
+      "kind": "code",
+      "ref": "roadmap/reconciliation/review-items.csv"
+    },
+    {
+      "kind": "code",
+      "ref": "roadmap/capabilities.csv"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/porting/README.md"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/porting/webui-files.json"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/porting/work-packages.json"
+    },
+    {
+      "kind": "code",
+      "ref": "provenance/dependencies.csv"
+    },
+    {
+      "kind": "code",
+      "ref": "PROVENANCE.md"
+    },
+    {
+      "kind": "code",
+      "ref": "api/DESIGN.md"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/config/mod.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/enterprise/config.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/enterprise/license.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/http/src/api/registry_rest.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/http/src/setup.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/manager/setup_key.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "install.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/update.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "scripts/engine-suite.sh"
+    },
+    {
+      "kind": "web",
+      "ref": "https://www.gnu.org/licenses/gpl-faq.html"
+    }
+  ],
+  "concerns": [
+    "All 3193 history reviews were only planned; source coverage must not be reported as behavioral absorption.",
+    "The test_mode license fixture can hide feature loss in the shipped configuration.",
+    "Existing own organisations/OIDC/SCIM/recovery cover narrower workflows than some older feature contracts.",
+    "Renaming or further modifying inherited implementation is not evidence that its license obligations disappear. Retain notices and resolve actual origins.",
+    "A source-format/API break does not permit dropping standard protocols, quotas, isolation, durability or recovery.",
+    "This pass authors planning and audit artifacts only; it must not silently change product code or mark release rows Done."
+  ],
+  "context": "Audit anchor 19c4409e97a89ab1c40716dab49ed9ee59d5dd32; current candidate build and Check succeeded; release unchanged.",
+  "current_state": "Existing Svelte/Rust feature ports and history ledger exist. Five newer commits are absent from the old roadmap snapshot; remaining feature initialization and private application dispatch are still coupled to old paths.",
+  "target_design": "One refreshed ROADMAP, existing D1-D11 map extended with owner claim/external feeds/source closure, and an execution queue binding all history reviews to reuse, required delta and behavior proof.",
+  "changes": [
+    "Refresh ROADMAP status and name current execution order.",
+    "Add bounded execution cards and a refreshed complete Git/history comparison snapshot.",
+    "Correct stale pending-work statements and distinguish historical release evidence from current packaged proof.",
+    "Author owner-claim behavior and failed/retried/repeated claim tests without implementing it."
+  ],
+  "boundaries": [
+    "No product source, dependency, release version, tag or channel changes.",
+    "No new UI rewrite, legacy API compatibility layer, waiver request or blanket history merge.",
+    "PostgreSQL first; FoundationDB scale and existing storage versatility remain."
+  ],
+  "verification": [
+    {
+      "name": "History and queue completeness",
+      "command": "Compare all stored commits, 53 source heads plus current main, every history review row and every assigned task ID",
+      "proves": "No available historical source/review omitted; no false absorption claim",
+      "expected": "257 stored commits covered; 3193 reviews assigned; unique valid task IDs",
+      "result": "Passed Python assertions over git rev-list/cat-file and CSV records: 257/257 audited stored commits covered by 53 historical source heads plus current main; zero uncovered; 3193/3193 original reviews preserved and assigned to 17 valid unique cards. All 53 historical source commits resolve. All semantic dispositions remain open."
+    },
+    {
+      "name": "Whole planning consistency",
+      "command": "python .ai/machine/organize.py --check; validate artifact paths and queue dependencies; git diff --check; inspect changed-path allowlist",
+      "proves": "Plans are schema valid, links/dependencies resolve and product/release files were not changed",
+      "expected": "All checks pass; only explicitly named planning documents and audit data change",
+      "result": "Passed path existence, required card fields, dependency graph, review identifier/original-field preservation and changed-path allowlist assertions. .ai/machine/organize.py --check passed (6 modules, 58 documents); git diff --check passed. Product source/Cargo/release tags unchanged. Planning deliverable complete; implementation status remains draft because product cuts are not executed."
+    }
+  ],
+  "status": "draft"
+}
