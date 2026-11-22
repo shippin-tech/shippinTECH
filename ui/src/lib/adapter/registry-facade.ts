@@ -22,12 +22,9 @@ export async function client() {
 	return { c: registryClient({ authorization: () => authorization() ?? undefined }), isRegistryName };
 }
 
-/** Whether this object is served by the facade (known to the generated registry). */
+/** Every private admin object uses our API, including unknown names that it must refuse. */
 export async function servedByFacade(object: string): Promise<boolean> {
-	const name = facadeName(object);
-	if (name === null) return false;
-	const { isRegistryName } = await client();
-	return isRegistryName(name);
+	return facadeName(object) !== null;
 }
 
 /** A refusal as the Error the screens already show. A 401 ends the session, as the JMAP path does. */
@@ -36,6 +33,7 @@ export function refusal(problem: Problem): Error {
 		clearSession();
 		return new Error('sign-in required');
 	}
+	if (problem.type === 'primaryKeyViolation') return new Error('That name is already taken.');
 	if (problem.type === 'objectIsLinked') {
 		return new Error(
 			'This record is still referenced by other objects. Remove those links before deleting it.'

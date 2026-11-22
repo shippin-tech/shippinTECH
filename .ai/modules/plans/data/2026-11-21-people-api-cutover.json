@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "id": "2026-11-21-people-api-cutover",
+  "title": "Finish the People and teams API consumer and narrow replacement scope",
+  "costar": {"context": "The owner approved the smallest licensing and API cutover without regression.", "objective": "Move the remaining People and teams private calls to the existing owned API without losing partial credential updates.", "style": "Measured implementation.", "tone": "Factual.", "audience": "Owner and maintainers.", "response": "Tested changes with live evidence or explicit unresolved verification."},
+  "sources": [
+    {"kind": "code", "ref": "ui/src/lib/adapter/jmap.ts"},
+    {"kind": "code", "ref": "ui/src/lib/adapter/portal.ts"},
+    {"kind": "code", "ref": "ui/test/registry-facade.test.ts"},
+    {"kind": "code", "ref": "ui/src/lib/shippin/people/team.ts"},
+    {"kind": "code", "ref": "ui/src/lib/shippin/people/team-call.ts"},
+    {"kind": "code", "ref": "ui/src/lib/contract/registry.ts"},
+    {"kind": "code", "ref": "ui/src/lib/contract/registry.generated.ts"},
+    {"kind": "code", "ref": "ui/src/lib/adapter/registry-facade.ts"},
+    {"kind": "code", "ref": "roadmap/independence.md"},
+    {"kind": "code", "ref": "PROVENANCE.md"},
+    {"kind": "code", "ref": "provenance/own-paths.txt"}
+  ],
+  "concerns": [
+    "Account creation returns only id; validating it as a full discriminated read record would report failure after successful creation.",
+    "Credential updates use field paths; replacing the credential map can destroy MFA and app passwords.",
+    "Collections must load every page, and server refusals and stale edits must remain visible.",
+    "Live tests require a candidate server; mocked tests alone cannot establish feature parity.",
+    "The squashed baseline and broad own-path claims are not provenance evidence. Permissive dependencies need not be rewritten merely because the author is upstream."
+  ],
+  "context": "Go authorizes the minimal implementation, not additional features, release tags or deletion of unrelated projects' data.",
+  "current_state": "At a999153 CI passes; People and teams still uses private Account and Domain methods directly. Actions/account security/bootstrap use /api/v1 but live parity remains open.",
+  "target_design": "People and teams uses the existing typed registry client for paged reads, id-only creates and precisely validated field patches. All private admin objects use the owned API; unknown objects fail locally instead of falling back to private JMAP. Standard mail and groupware protocols remain supported. The licensing boundary distinguishes incompatible or unresolved inherited code from dependencies with a permitted license option.",
+  "changes": ["Add account creation and person field-patch operations to the existing registry client.", "Move the People and teams consumer to those operations and preserve all-page reads and errors.", "Add adapter regression and live lifecycle coverage.", "Record the minimal replacement boundary without declaring ownership or changing license notices."],
+  "boundaries": ["No feature redesign, Listmonk integration, platform expansion or mail protocol removal.", "No change to stored credentials or settings except disposable test fixtures.", "Do not call the cutover complete or retire the baseline without live proof."],
+  "verification": [
+    {"name": "Whole web gate", "command": "python scripts/regression.py --only web", "proves": "Existing workflows, generated contracts, Svelte build and all browser/unit checks remain intact.", "expected": "All applicable checks pass.", "result": "2026-11-21: 17 passed, 0 failed, 1 not run. 289 unit tests, 12 mocked browser tests, Svelte check (0 errors/warnings), build, lint, generated contracts, brand/API/MCPL/inventory and runnable deploy checks pass. POSIX relay permission check not run on Windows. Runner exits 1 for incomplete coverage; live/engine gates omitted by --only web."},
+    {"name": "Live people lifecycle", "command": "npm run test:contract-live", "proves": "Real create, edit, membership, password reset, deletion and refusal behavior match the baseline with disposable fixtures.", "expected": "Lifecycle and existing contract suites pass without private methods in the UI consumer.", "result": "Unverified: candidate not deployed. This commit is a tested consumer cutover, not certification of whole-product parity."},
+    {"name": "Operating records", "command": "python .ai/machine/organize.py --check", "proves": "Plan and repository metadata conform to the operating schemas.", "expected": "No validation errors.", "result": "Passed 2026-11-21: 6 modules and 55 documents validated. The six product files were hash-verified unchanged after the prior full web run and history-only commit. Owner explicitly requests their commit now; live parity remains open."}
+  ],
+  "status": "implemented"
+}

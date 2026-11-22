@@ -7,6 +7,9 @@ export type MethodResponse = [string, Record<string, unknown>, string];
 const CORE = 'urn:ietf:params:jmap:core';
 
 export async function jmap(using: string[], calls: MethodCall[]): Promise<MethodResponse[]> {
+	if (calls.some(([name]) => name.startsWith('x:'))) {
+		throw new Error('Administrative operations must use the shippinTECH API');
+	}
 	const auth = authorization();
 	if (!auth) throw new Error('sign-in required');
 	const res = await fetch(paths.jmap, {

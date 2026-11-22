@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { jmap } from '../src/lib/adapter/jmap';
 import { loadRegistryPage, writeRegistry } from '../src/lib/adapter/portal';
 import { facadeName, servedByFacade } from '../src/lib/adapter/registry-facade';
 
@@ -49,10 +50,37 @@ describe('which objects go through the facade', () => {
 		expect(facadeName('Mailbox')).toBeNull();
 	});
 
-	it('serves x: objects the generated registry has, and nothing else', async () => {
+	it('routes every private object through the owned API', async () => {
 		expect(await servedByFacade('x:Domain')).toBe(true);
-		expect(await servedByFacade('x:NoSuchObject')).toBe(false);
+		expect(await servedByFacade('x:NoSuchObject')).toBe(true);
 		expect(await servedByFacade('Mailbox')).toBe(false);
+	});
+
+	it('refuses unknown private objects without falling back to JMAP', async () => {
+		await expect(loadRegistryPage('x:NoSuchObject')).rejects.toThrow();
+		await expect(writeRegistry('x:NoSuchObject', { destroy: ['a'] }, 'a')).rejects.toThrow();
+		expect(calls).toHaveLength(0);
+	});
+
+	it('refuses private methods before sending even a mixed JMAP batch', async () => {
+		await expect(
+			jmap(
+				[],
+				[
+					['Mailbox/get', { accountId: 'a' }, 'm'],
+					['x:Account/get', { accountId: 'a' }, 'a']
+				]
+			)
+		).rejects.toThrow('Administrative operations must use the shippinTECH API');
+		expect(calls).toHaveLength(0);
+	});
+
+	it('keeps standard JMAP mail operations available', async () => {
+		const response = ['Mailbox/get', { list: [{ id: 'inbox' }] }, 'm'];
+		answers.push({ status: 200, body: { methodResponses: [response] } });
+		expect(await jmap([], [['Mailbox/get', { accountId: 'a' }, 'm']])).toEqual([response]);
+		expect(calls).toHaveLength(1);
+		expect(calls[0].body).toMatchObject({ methodCalls: [['Mailbox/get', { accountId: 'a' }, 'm']] });
 	});
 });
 

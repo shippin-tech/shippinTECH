@@ -75,6 +75,35 @@ const AccountPasswordPatch = type({
 }).onDeepUndeclaredKey('reject');
 export type AccountPasswordPatch = typeof AccountPasswordPatch.infer;
 
+const CreatedAccount = type({ id: 'string > 0' }).onDeepUndeclaredKey('delete');
+
+/** Validate person edits using the generated schema, retaining credential field paths. */
+function personPatch(input: Row): Parsed<Row> {
+	const schema = registry.Account.update()
+		.extract({ '@type': "'User'" })
+		.omit('@type')
+		.onDeepUndeclaredKey('reject');
+	const ordinary = Object.fromEntries(Object.entries(input).filter(([key]) => !key.includes('/')));
+	const checked = schema(ordinary);
+	if (checked instanceof type.errors) return { ok: false, problem: asProblem(checked) };
+	const patch: Row = { ...checked };
+	const credentials = new Set<string>();
+	for (const [path, value] of Object.entries(input)) {
+		if (!path.includes('/')) continue;
+		const match = /^credentials\/([A-Za-z0-9_-]+)(\/secret)?$/.exec(path);
+		if (!match || 'credentials' in ordinary || credentials.has(match[1])) {
+			return { ok: false, problem: localProblem('invalid-input', 'Invalid credential patch', 422) };
+		}
+		credentials.add(match[1]);
+		const entry = match[2] ? { '@type': 'Password', secret: value } : value;
+		const credential = schema({ credentials: { [match[1]]: entry } });
+		if (credential instanceof type.errors) return { ok: false, problem: asProblem(credential) };
+		// Validation does not expand the patch: the engine must see only the named field.
+		patch[path] = value;
+	}
+	return { ok: true, value: patch };
+}
+
 /** True for a name the generated registry has. */
 export function isRegistryName(name: string): name is RegistryName {
 	return Object.hasOwn(registry, name);
@@ -154,6 +183,23 @@ export function registryClient(options: ClientOptions) {
 		`/${encodeURIComponent(name)}${id === undefined ? '' : `/${encodeURIComponent(id)}`}`;
 
 	return {
+		/** Creates acknowledge the id; a reread would expose a different response contract. */
+		async createAccount(input: Row): Promise<Parsed<typeof CreatedAccount.infer>> {
+			const checked = registry.Account.create()(input);
+			if (checked instanceof type.errors) return { ok: false, problem: asProblem(checked) };
+			return send('POST', where('Account'), CreatedAccount, checked) as Promise<
+				Parsed<typeof CreatedAccount.infer>
+			>;
+		},
+
+		async updatePerson(id: string, input: Row): Promise<Parsed<Read<'Account'>>> {
+			const checked = personPatch(input);
+			if (!checked.ok) return checked;
+			return send('PATCH', where('Account', id), registry.Account.read(), checked.value) as Promise<
+				Parsed<Read<'Account'>>
+			>;
+		},
+
 		/** An action returns output fields, not a persisted record with id and @type. */
 		async executeAction(input: Row): Promise<Parsed<Row>> {
 			const checked = registry.Action.create()(input);
