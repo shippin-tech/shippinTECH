@@ -30,7 +30,7 @@ generator (CSPRNG) for you to paste somewhere else. Every key the server makes c
 | Sign-in client secret (OpenID Connect) | **Yours**: your identity provider (Okta, Entra, Google, Keycloak) | "Set up sign-in" for a domain, under My domain or Organisation → Domains → Client secret | Encrypted (AES-256-GCM-SIV) under the sign-in service's own key, bound to that one domain | Never. The page only says a secret is saved | Only the provider's own token address, found from its issuer. Redirects refused | `ui/e2e-live/sso.spec.ts`; same unit test |
 | SCIM token | **Made by the server**: `scim.<domain>.` plus 48 random characters (about 286 bits) | Your identity provider's SCIM settings | Only its SHA-256 fingerprint | Never. Shown once, when made | Nowhere. Your provider sends it to us | `ui/e2e-live/scim.spec.ts` (never shown again, a changed token refused, revocation immediate) |
 | App password | **Made by the server**: 18 random bytes (144 bits) | The password field of one mail app or phone | Only an Argon2id hash | Never. Shown once, when made | Nowhere. Your app sends it to us | `ui/e2e-live/free-plan.spec.ts` (made in the browser, never returned by the server) |
-| Setup key | **Made by the server** on first start: 24 random characters (about 143 bits), printed by `install.sh` and `update.sh` | The sign-in page: account `admin`, the key as the password | A file in the server's data volume | Not through the website | Nowhere | `ui/e2e-live/first-run.spec.ts`, on a fresh install (the key leads to your administrator, then stops working) |
+| Internal install authority | **Made by the server**: 24 random characters (about 143 bits) | Nothing to paste: the installer uses it through container loopback while you choose the root password | Root-readable file in the data volume, deleted after claim | Never | Only the local claim endpoint; never accepted for general login | `tests/src/system/authentication.rs`, `deploy/claim.test.sh`, `ui/e2e-live/first-run.spec.ts` |
 | Google refresh token | Google, when a person connects their Drive | Nothing to paste: the server receives it | Encrypted (AES-256-GCM-SIV) under the Google link's own key, bound to that person | Never. The browser is told only who is connected | Only Google | `ui/e2e-live/google.spec.ts`; unit test in `crates/common/src/shippin/google.rs` |
 
 The same notice appears in the web app beside every one of these fields, and `/keys` on your
@@ -40,7 +40,7 @@ server lists them all.
 
 **One key, one job** ([NIST SP 800-57 Part 1 Rev. 5](https://doi.org/10.6028/NIST.SP.800-57pt1r5), §5.2). There are three kinds of key, kept apart:
 
-1. **The install key** (the setup key above) only lets the first administrator in, once.
+1. **The install key** (the setup key above) authorizes the local installer to create the first administrator, once. It cannot sign in.
 2. **One service key per service**, used for nothing else: `ai` seals the AI provider key,
    `sso` seals sign-in client secrets, `google` seals Google tokens, and `domain-proof` signs
    the DNS value a free-plan owner publishes (an HMAC key, never used to seal). Each is 32
@@ -66,16 +66,17 @@ And for every sealed value:
 - **Keys the server makes for you** are not kept at all. Only a fingerprint (SHA-256) or a
   password hash (Argon2id) is stored, which is enough to recognise the key and useless for
   recovering it. That is what OWASP ASVS 5.0 asks for secrets that are only ever checked. The
-  setup key is the exception: it is a one-time code, kept as a file so that `update.sh` can
-  print it again, and deleted once used (ASVS 6.4.1).
+  internal install key is the exception: the local installer reads its root-only file,
+  and successful claim deletes it. Neither install nor update prints it.
 
 Code: `crates/common/src/shippin/keys.rs` (service keys and the key-wrapping key),
 `crates/common/src/shippin/provisioning.rs`,
 `crates/common/src/manager/setup_key.rs`, `crates/common/src/auth/credential.rs`.
 
 **The install key is ephemeral.** It works once, and also stops working 24 hours after it
-was made (`SETUP_KEY_HOURS`, 1 to 720). Restarting the server after that makes and prints a
-new one, so only someone who can restart the server can get in.
+was made (`SETUP_KEY_HOURS`, 1 to 720). An unfinished claim can be resumed with
+`bash claim.sh` after restarting mail. A durable database marker prevents ownership
+from reopening after a successful claim, even if administrator accounts are deleted.
 
 **Authoring and replacing service keys.** After the first administrator exists, the dashboard
 leads to **Admin panel → Security → Keys** (`/shippin/admin/keys`). There, each service shows

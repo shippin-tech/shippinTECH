@@ -18,10 +18,9 @@ services:
     environment:
       SHIPPIN_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
       shippin.tech_HOSTNAME: ${MAIL_HOSTNAME}
-      # Optional break-glass administrator (user:password). Without it, a new server
-      # prints a one-time setup key for "admin" until the first administrator exists.
+      # Optional break-glass administrator, separate from the permanent root owner.
       shippin.tech_RECOVERY_ADMIN: ${RECOVERY_ADMIN:-}
-      # How long that setup key works, in hours; a restart after that prints a new one.
+      # Internal installer authority lifetime; never printed or used for general login.
       shippin.tech_SETUP_KEY_HOURS: ${SETUP_KEY_HOURS:-24}
       # Self-service free plan: customers sign up with their own domain at /signup.
       # Closed unless PANEL_SIGNUP=open. Domain ownership is always proven by DNS here.

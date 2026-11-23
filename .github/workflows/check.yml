@@ -65,6 +65,7 @@ jobs:
       - name: Host deploy scripts behave (fake docker)
         run: |
           bash deploy/install.test.sh
+          bash deploy/claim.test.sh
           bash deploy/update.test.sh
           bash deploy/auto-update.test.sh
           bash deploy/backup.test.sh
@@ -134,6 +135,9 @@ jobs:
           STORE: Sqlite
         run: |
           cargo test -p common --locked --lib system_domain
+          cargo test -p common --locked --lib manager::setup_key
+          cargo test -p http_proto --locked --lib claim_tests
+          cargo test -p http@0.16.27 --locked --lib system_domain_tests
           cargo test -p tests --locked --no-default-features --features sqlite system_domain -- --nocapture
       - name: PostgreSQL bootstrap and administrator lifecycle
         env:

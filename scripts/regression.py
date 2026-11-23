@@ -70,7 +70,7 @@ def web_steps() -> list[Step]:
         *[
             Step(f"web.deploy.{t}", "web", f"deploy/{t}.test.sh (fake docker)", [BASH, f"deploy/{t}.test.sh"],
                  posix_only=(t == "relay"))
-            for t in ("install", "update", "auto-update", "backup", "relay", "host")
+            for t in ("install", "claim", "update", "auto-update", "backup", "relay", "host")
         ],
         Step("web.webui-inventory", "web", "Porting inventory", [*n, "scripts/check-webui-inventory.mjs"], UI),
         Step("web.mcpl", "web", "MCPL conformance", [*n, "scripts/check-mcpl.mjs"], UI),

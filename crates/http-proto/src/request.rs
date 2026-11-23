@@ -1,5 +1,3 @@
-
-
 use std::borrow::Cow;
 
 use compact_str::ToCompactString;
@@ -19,51 +17,79 @@ pub async fn fetch_body(
     max_size: usize,
     session_id: u64,
 ) -> Option<Vec<u8>> {
+    // Claim bodies carry the permanent password and internal installer authority.
+    // Suppress both headers and body, including oversized/encoded-path requests.
+    let log_body = !is_claim_path(req.uri().path());
     let mut bytes = Vec::with_capacity(1024);
     while let Some(Ok(frame)) = req.frame().await {
         if let Some(data) = frame.data_ref() {
             if bytes.len() + data.len() <= max_size || max_size == 0 {
                 bytes.extend_from_slice(data);
             } else {
-                trc::event!(
-                    Http(trc::HttpEvent::RequestBody),
-                    SpanId = session_id,
-                    Details = req
-                        .headers()
-                        .iter()
-                        .map(|(k, v)| trc::Value::Array(vec![
-                            k.as_str().to_compact_string().into(),
-                            v.to_str().unwrap_or_default().to_compact_string().into()
-                        ]))
-                        .collect::<Vec<_>>(),
-                    Contents = std::str::from_utf8(&bytes)
-                        .unwrap_or("[binary data]")
-                        .to_string(),
-                    Size = bytes.len(),
-                    Limit = max_size,
-                );
+                if log_body {
+                    trc::event!(
+                        Http(trc::HttpEvent::RequestBody),
+                        SpanId = session_id,
+                        Details = req
+                            .headers()
+                            .iter()
+                            .map(|(k, v)| trc::Value::Array(vec![
+                                k.as_str().to_compact_string().into(),
+                                v.to_str().unwrap_or_default().to_compact_string().into()
+                            ]))
+                            .collect::<Vec<_>>(),
+                        Contents = std::str::from_utf8(&bytes)
+                            .unwrap_or("[binary data]")
+                            .to_string(),
+                        Size = bytes.len(),
+                        Limit = max_size,
+                    );
+                }
 
                 return None;
             }
         }
     }
 
-    trc::event!(
-        Http(trc::HttpEvent::RequestBody),
-        SpanId = session_id,
-        Details = req
-            .headers()
-            .iter()
-            .map(|(k, v)| trc::Value::Array(vec![
-                k.as_str().to_compact_string().into(),
-                v.to_str().unwrap_or_default().to_compact_string().into()
-            ]))
-            .collect::<Vec<_>>(),
-        Contents = std::str::from_utf8(&bytes)
-            .unwrap_or("[binary data]")
-            .to_string(),
-        Size = bytes.len(),
-    );
+    if log_body {
+        trc::event!(
+            Http(trc::HttpEvent::RequestBody),
+            SpanId = session_id,
+            Details = req
+                .headers()
+                .iter()
+                .map(|(k, v)| trc::Value::Array(vec![
+                    k.as_str().to_compact_string().into(),
+                    v.to_str().unwrap_or_default().to_compact_string().into()
+                ]))
+                .collect::<Vec<_>>(),
+            Contents = std::str::from_utf8(&bytes)
+                .unwrap_or("[binary data]")
+                .to_string(),
+            Size = bytes.len(),
+        );
+    }
 
     bytes.into()
+}
+
+fn is_claim_path(path: &str) -> bool {
+    path.split('/')
+        .map(decode_path_element)
+        .any(|part| part == "setup")
+}
+
+#[cfg(test)]
+mod claim_tests {
+    #[test]
+    fn claim_secrets_are_not_request_trace_data() {
+        for path in [
+            "/api/v1/setup/admin",
+            "/api/v1/%73etup/admin",
+            "/api/v1/setup/%61dmin",
+        ] {
+            assert!(super::is_claim_path(path));
+        }
+        assert!(!super::is_claim_path("/api/v1/registry/Domain"));
+    }
 }

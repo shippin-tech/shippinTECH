@@ -85,7 +85,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     setcap 'cap_net_bind_service=+ep' /usr/local/bin/shippin.tech
 COPY --from=portal --chown=shippin.tech:shippin.tech /src/ui/build /usr/share/shippin.tech/portal
 # The host-side deploy scripts ride along so auto-update.sh can refresh them from the image.
-COPY deploy/compose.yaml deploy/backend.sh deploy/update.sh deploy/auto-update.sh deploy/verify-install.sh \
+COPY deploy/compose.yaml deploy/backend.sh deploy/claim.sh deploy/update.sh deploy/auto-update.sh deploy/verify-install.sh \
      deploy/backup.sh deploy/host.sh deploy/relay.sh deploy/relay.py deploy/relay.env.example \
      deploy/server.env.example deploy/README.md deploy/PRODUCTION.md \
      /usr/share/shippin.tech/deploy/

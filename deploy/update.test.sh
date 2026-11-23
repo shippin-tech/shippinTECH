@@ -40,7 +40,7 @@ if [[ "$1" == compose ]]; then
     exec)
       all="$*"
       if [[ "$all" == *"test -f /var/lib/shippin.tech/config.json"* ]]; then [[ ! -f "$FAKE/bootstrap" ]]; exit; fi
-      if [[ "$all" == *"setup-key"* ]]; then [[ -f "$FAKE/key" ]] && cat "$FAKE/key"; exit 0; fi
+      if [[ "$all" == *"setup-key"* ]]; then test -s "$FAKE/key"; exit $?; fi
       exit 0 ;;
   esac
   exit 0
@@ -130,13 +130,13 @@ status_of "$IMG"
 [[ $rc -ne 0 ]] && echo "ok   external without a cluster file exits non-zero" || { echo "FAIL rc"; exit 1; }
 expect "COMPOSE_PROFILES=bundled" "$out" "message offers the bundled option"
 
-# The first-run key is printed when the server has one
+# Unclaimed ownership is resumable without printing internal authority
 reset; bundled
 echo 'AbCdEfGh12345678' > state/key
 out=$(bash update.sh "$IMG" 2>&1)
-expect "username: admin" "$out" "setup key: tells you to sign in as admin"
-expect "key:      AbCdEfGh12345678" "$out" "setup key: prints the key"
-expect "https://mail.example.com/login" "$out" "setup key: names the login address"
+expect "bash claim.sh" "$out" "unclaimed: names the local claim command"
+refute "AbCdEfGh12345678" "$out" "internal authority is never printed"
+refute "username: admin" "$out" "no temporary general login"
 
 # Bootstrap mode after start: fail, nothing saved
 reset; bundled; touch state/bootstrap

@@ -120,15 +120,15 @@ export const KEY_GUIDES: Record<KeysVariant, KeyGuide> = {
 	setup: {
 		id: 'setup',
 		origin: 'generated',
-		title: 'Paste your setup key here. This is the right place for it.',
+		title: 'Installation creates your administrator. No setup key needs copying.',
 		facts: [
 			{
 				label: 'Where it comes from',
-				text: `This server made it on its first start: 24 characters from ${RANDOM}. install.sh and update.sh print it.`
+				text: `This server made it on its first start: 24 characters from ${RANDOM}. Only the local installer reads it; it is never printed.`
 			},
 			{
 				label: 'How to use it',
-				text: 'Sign in as admin, with the key as the password. You will then create your own administrator.'
+				text: 'Choose your root@system.local password during installation, then use it at normal sign-in. To finish an interrupted installation, run bash claim.sh.'
 			},
 			{ label: 'How it is kept', text: 'Only in the server’s own data volume.' },
 			{
@@ -137,7 +137,7 @@ export const KEY_GUIDES: Record<KeysVariant, KeyGuide> = {
 			}
 		],
 		proof:
-			'The first-run live test, on a fresh install, checks that the key leads to your administrator and then stops working.'
+			'Claim integration tests check one owner, refused retries and durable closure; the live browser test checks normal password sign-in.'
 	}
 };
 

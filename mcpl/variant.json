@@ -43,9 +43,7 @@
       "routes": [
         "/shippin/admin"
       ],
-      "emits": [
-        "setup.administrator.created"
-      ]
+      "emits": []
     },
     {
       "id": "agent",
@@ -411,7 +409,6 @@
     "panel.mailbox.deleted",
     "recover.account.restored",
     "recover.message.restored",
-    "setup.administrator.created",
     "team.group.created",
     "team.group.removed",
     "team.member.changed",

@@ -114,6 +114,11 @@ pub fn http_client_builder(allow_invalid_certs: bool) -> ClientBuilder {
     Client::builder().use_preconfigured_tls(shared_tls_config(allow_invalid_certs))
 }
 
+/// Internal installer calls must never follow redirects or use an environment proxy.
+pub fn local_http_client_builder() -> ClientBuilder {
+    http_client_builder(false).no_proxy().redirect(reqwest::redirect::Policy::none())
+}
+
 pub fn http1_client_builder(allow_invalid_certs: bool) -> ClientBuilder {
     let tls = if allow_invalid_certs {
         SHARED_TLS_CONFIGS.insecure_http1.clone()

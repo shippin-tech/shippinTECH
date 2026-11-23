@@ -29,8 +29,6 @@ if [[ "$backend" == postgres ]] && $bundled; then
   ok 'PostgreSQL answers a query'
 fi
 
-setup_key() { "${compose[@]}" exec -T mail cat /var/lib/shippin.tech/setup-key 2>/dev/null | tr -d '[:space:]' || true; }
-
 check_node() {
   local when=$1
   "${compose[@]}" exec -T mail test -f /var/lib/shippin.tech/config.json \
@@ -39,10 +37,8 @@ check_node() {
   local pending
   pending=$(curl -s "$base/api/v1/setup" | grep -o '"pending":[a-z]*' | cut -d: -f2)
   case "$pending" in
-    false) ok "$when: an administrator exists; no setup key is accepted" ;;
-    true)
-      [[ -n "$(setup_key)" ]] || fail "$when: setup is pending but no setup key is saved"
-      ok "$when: no administrator yet; the setup key is saved in the data volume" ;;
+    false) ok "$when: ownership is claimed" ;;
+    true) fail "$when: installation is unclaimed; run bash claim.sh to choose the root password" ;;
     *) fail "$when: the server did not answer $base/api/v1/setup" ;;
   esac
   if [[ "$login" == *:* ]]; then
@@ -54,18 +50,12 @@ check_node() {
 }
 
 check_node "before restart"
-key_before=$(setup_key)
 "${compose[@]}" restart mail >/dev/null
 for _ in $(seq 1 90); do
   [[ "$(curl -s -o /dev/null -w '%{http_code}' "$base/healthz/live")" == 200 ]] && break
   sleep 2
 done
 check_node "after restart"
-if [[ -n "$key_before" ]]; then
-  [[ "$(setup_key)" == "$key_before" ]] || fail "the setup key changed across the restart"
-  ok "the setup key is the same after the restart"
-  note "sign in at https://$(value MAIL_HOSTNAME)/login as admin with the setup key to create your administrator"
-fi
 if "${compose[@]}" logs --since 10m mail 2>&1 | grep -q 'bootstrap mode - temporary administrator'; then
   fail "the logs show the server started in setup mode with a temporary administrator"
 fi

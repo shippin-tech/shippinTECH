@@ -44,6 +44,13 @@ async fn main() -> std::io::Result<()> {
     // Build the shared outbound TLS configurations
     utils::http::init_shared_tls_configs();
 
+    if let Some(command) = std::env::args().nth(1)
+        && matches!(command.as_str(), "--claim-admin" | "--claim-admin-status")
+    {
+        let code = http::setup::run_local_claim(command == "--claim-admin-status").await;
+        std::process::exit(code);
+    }
+
     // Load config and apply macros
     let mut init = Box::pin(BootManager::init()).await;
 

@@ -75,13 +75,9 @@ impl RegistryStore {
     }
 
     #[inline(always)]
-    /// The break-glass login: RECOVERY_ADMIN from the environment, or else the
-    /// first-run setup key for "admin" while the server has no administrator.
+    /// Optional break-glass login. Internal claim credentials never grant general login.
     pub fn recovery_admin(&self) -> Option<(String, String)> {
-        self.0
-            .env_recovery_admin
-            .clone()
-            .or_else(|| self.setup_key().map(|key| ("admin".to_string(), key)))
+        self.0.env_recovery_admin.clone()
     }
 
     pub fn has_env_recovery_admin(&self) -> bool {

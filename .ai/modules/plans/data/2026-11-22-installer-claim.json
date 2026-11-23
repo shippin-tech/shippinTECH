@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0",
+  "id": "2026-11-22-installer-claim",
+  "title": "Claim the permanent administrator during installation",
+  "costar": {
+    "context": "Owner explicitly requests implementation, commit and updated release after the setup audit.",
+    "objective": "Fresh install chooses root password and ends ready for normal login without manual temporary credentials.",
+    "style": "Minimal reuse of existing root creation",
+    "tone": "Direct",
+    "audience": "Owner",
+    "response": "Tested commit and updated testable image; release-channel disposition explicit"
+  },
+  "sources": [
+    {
+      "kind": "code",
+      "ref": "install.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/update.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/install.test.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/update.test.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/auto-update.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/verify-install.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/README.md"
+    },
+    {
+      "kind": "code",
+      "ref": "Dockerfile.fdb"
+    },
+    {
+      "kind": "code",
+      "ref": ".github/workflows/test-build.yml"
+    },
+    {
+      "kind": "code",
+      "ref": ".github/workflows/check.yml"
+    },
+    {
+      "kind": "code",
+      "ref": "scripts/regression.py"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/common/src/manager/setup_key.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/http/src/setup.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/http-proto/src/request.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/store/src/build/registry.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/main/src/main.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "tests/src/system/authentication.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "api/v1/product.openapi.yml"
+    },
+    {
+      "kind": "code",
+      "ref": "KEYS.md"
+    },
+    {
+      "kind": "code",
+      "ref": "AGENTS.md"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/routes/(account)/login/+page.svelte"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/routes/(shippin)/shippin/admin/+layout.svelte"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/lib/adapter/setup.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/e2e/system-setup.spec.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/e2e-live/first-run.spec.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "crates/utils/src/http.rs"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/claim.test.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/server.env.example"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/lib/shippin/keys/keys.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/e2e-live/global-setup.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/lib/shippin/admin/SetupAdmin.svelte"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/lib/shippin/admin/SetupAdmin.stories.svelte"
+    },
+    {
+      "kind": "code",
+      "ref": "RELEASE.md"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/src/lib/shippin/admin/component.json"
+    },
+    {
+      "kind": "code",
+      "ref": "mcpl/variant.json"
+    },
+    {
+      "kind": "code",
+      "ref": "ui/test/keys.test.ts"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/compose.yaml"
+    },
+    {
+      "kind": "code",
+      "ref": "deploy/claim.live.test.sh"
+    }
+  ],
+  "concerns": [
+    "Claim status must be durable and independent of key expiration and RECOVERY_ADMIN.",
+    "Only local install authority holds the internal credential; public visitors cannot claim by racing the first login.",
+    "Concurrent claims must not replace root; successful claim must remain closed after restart/deletion.",
+    "No owner password or internal credential in process arguments, logs or URLs.",
+    "The existing root creation path enforces password policy and hashes credentials; reuse it.",
+    "Published-image testing must not rely on test_mode synthetic entitlement."
+  ],
+  "context": "main 2701a7a; user authorizes bounded D0 implementation now.",
+  "current_state": "Installer prints key; browser authenticates temporary admin, creates root then signs in again.",
+  "target_design": "Installer/claim.sh reads hidden confirmed password or stdin, invokes local binary claim client over container loopback, and creates root via existing API. Internal bootstrap credential is never printed or accepted for general login. Durable claimed marker plus existing admin check prevents reopening. Ordinary login and independent real mail domains remain.",
+  "changes": [
+    "Add a local-only CLI client and deploy claim helper; invoke automatically on installation, expose resume command for existing unclaimed nodes.",
+    "Use durable claimed state; authorize only internal claim credential and retire it after successful creation; preserve optional recovery login independently.",
+    "Remove manual key instructions and obsolete first-run admin UI journey; document new install and resume commands.",
+    "Add failed/retried/concurrent/retired/restart claim evidence and installer secret-handling checks."
+  ],
+  "boundaries": [
+    "No storage selector migration or volume deletion.",
+    "No unrelated API/schema/feature rewrite.",
+    "Build candidate before any release-channel action; do not silently waive unrelated RELEASE rows."
+  ],
+  "verification": [
+    {
+      "name": "Runtime and claim state",
+      "command": "Run common/http/http-proto tests and PostgreSQL/SQLite system::authentication integration",
+      "proves": "Authorization, credential policy, single claim and durable closure",
+      "expected": "Pass including refusal and recovery-override cases",
+      "result": "PostgreSQL and SQLite: 3 authentication/identity tests passed each after the concurrent-claim conflict fix. Final rerun and full common/http/http-proto unit suites are running after adding tenant-admin exclusion from system ownership."
+    },
+    {
+      "name": "Whole product/web/deploy gate",
+      "command": "python scripts/regression.py --only web; claim shell suite; cargo check application postgres,s3,nats,enterprise",
+      "proves": "Existing UI/deploy/contracts compile and installer handles claim safely",
+      "expected": "All applicable checks pass with missing checks named",
+      "result": "Windows application check with postgres,s3,nats,enterprise passed. Full web runner: 19 passed, 0 failed; POSIX relay check deferred to Linux. Includes 289 unit tests and 13 browser tests. Linux claim helper including hidden interactive confirmation passed. Repository organization check passed."
+    },
+    {
+      "name": "Packaged first install",
+      "command": "Build immutable candidate; fresh PostgreSQL install/claim/sign-in/restart and repeat-claim checks",
+      "proves": "Real binary/installer claim works without test-only entitlement",
+      "expected": "Owner signs in normally, no printed bootstrap key, restart/reclaim checks pass",
+      "result": "Added packaged PostgreSQL installation, normal API/browser sign-in, repeat-claim and restart checks to Test container build. Not yet run on published candidate."
+    }
+  ],
+  "status": "approved"
+}

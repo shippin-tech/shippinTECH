@@ -8,6 +8,8 @@ import { resolve } from 'node:path';
 const LOCAL_NETWORK = '172.29.0.0/16';
 
 export default async function globalSetup() {
+	// Dedicated installer fixture must not mutate the unrelated local development stack.
+	if (process.env.FIRST_RUN_URL) return;
 	const base = process.env.LIVE_URL ?? 'http://127.0.0.1:28080';
 	if (!/^http:\/\/(127\.0\.0\.1|localhost)[:/]/.test(base)) return;
 

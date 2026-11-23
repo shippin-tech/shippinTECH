@@ -22,6 +22,7 @@ use types::id::Id;
 async fn system_domain_bootstrap_is_durable_and_idempotent() {
     use crate::utils::{storage::build_data_store, temp_dir::TempDir};
     use common::manager::system_domain::{ensure_system_domain, seed_system_identity, SYSTEM_DOMAIN};
+    use common::manager::setup_key::{mark_owner_claimed, owner_claimed, prepare_setup_key};
     use registry::schema::structs::{Domain, SystemSettings};
     use store::{RegistryStore, Store};
     let temp = TempDir::new("system-domain-bootstrap", true);
@@ -36,6 +37,8 @@ async fn system_domain_bootstrap_is_durable_and_idempotent() {
     let settings = registry.object::<SystemSettings>(Id::singleton()).await.unwrap().unwrap();
     assert_eq!(settings.default_domain_id, id);
     assert_eq!(registry.object::<Domain>(id).await.unwrap().unwrap().name, SYSTEM_DOMAIN);
+    assert!(!owner_claimed(&registry, &[]).await.unwrap());
+    mark_owner_claimed(&registry).await.unwrap();
     drop(registry);
     drop(store);
     let store = Store::build(build_data_store(&backend, &path).await).await.unwrap();
@@ -44,6 +47,10 @@ async fn system_domain_bootstrap_is_durable_and_idempotent() {
     assert_eq!(ensure_system_domain(&reopened).await.unwrap(), id);
     assert_eq!(reopened.count_object(ObjectType::Domain).await.unwrap(), 1);
     assert_eq!(reopened.object::<SystemSettings>(Id::singleton()).await.unwrap().unwrap(), settings);
+    // Ownership stays closed even when there are no administrator accounts or local key.
+    assert!(owner_claimed(&reopened, &[]).await.unwrap());
+    prepare_setup_key(&reopened, &[]).await;
+    assert!(reopened.setup_key().is_none());
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -57,16 +64,45 @@ async fn system_domain_root_provisions_mail_without_becoming_a_mailbox() {
     let recovery = test.account("admin");
     let registry = test.server.registry();
     let system_id = ensure_system_domain(registry).await.unwrap();
-    registry.set_setup_key(Some(("synthetic setup fixture".into(), now() + 600)));
+    assert!(registry.has_env_recovery_admin());
+    common::manager::setup_key::prepare_setup_key(registry, &test.server.core.network.security.default_role_ids_admin).await;
+    assert!(registry.setup_key().is_some(), "optional recovery must not block owner claim");
+    let install_key = "synthetic setup fixture";
+    registry.set_setup_key(Some((install_key.into(), now() + 600)));
     let count_before = registry.count_object(ObjectType::Domain).await.unwrap();
     let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build().unwrap();
     let password = "independent system administrator fixture";
-    let response = client.post("https://127.0.0.1:18898/api/v1/setup/admin")
+    let endpoint = "https://127.0.0.1:18898/api/v1/setup/admin";
+    registry.set_setup_key(Some((install_key.into(), now() - 1)));
+    let expired_status: serde_json::Value = client.get("https://127.0.0.1:18898/api/v1/setup")
+        .send().await.unwrap().json().await.unwrap();
+    assert_eq!(expired_status["pending"], true, "expiry does not mean claimed");
+    assert_eq!(client.post(endpoint).basic_auth("admin", Some(install_key))
+        .json(&json!({"password":password})).send().await.unwrap().status(), 403);
+    registry.set_setup_key(Some((install_key.into(), now() + 600)));
+    assert_eq!(client.get("https://127.0.0.1:18898/api/v1/account")
+        .basic_auth("admin", Some(install_key)).send().await.unwrap().status(), 401);
+    // Recovery login neither consumes ownership nor grants installer authority.
+    assert_eq!(client.post(endpoint)
         .basic_auth(recovery.name(), Some(recovery.secret()))
-        .json(&json!({"password":password})).send().await.unwrap();
+        .json(&json!({"password":password})).send().await.unwrap().status(), 403);
+    assert_eq!(client.post(endpoint).basic_auth("admin", Some(install_key))
+        .json(&json!({"password":"123"})).send().await.unwrap().status(), 400);
+    let status: serde_json::Value = client.get("https://127.0.0.1:18898/api/v1/setup")
+        .send().await.unwrap().json().await.unwrap();
+    assert_eq!(status["pending"], true);
+    // Two simultaneous claims can create only one root; neither can replace it.
+    let request = || client.post(endpoint).basic_auth("admin", Some(install_key))
+        .json(&json!({"password":password})).send();
+    let (first, second) = tokio::join!(request(), request());
+    let (first, second) = (first.unwrap(), second.unwrap());
+    let (response, refused) = if first.status() == 200 { (first, second) } else { (second, first) };
     assert_eq!(response.status(), 200, "root setup failed");
+    assert_eq!(refused.status(), 409, "concurrent claim must be refused");
     assert_eq!(response.json::<serde_json::Value>().await.unwrap()["email"], ROOT_ACCOUNT);
     assert!(registry.setup_key().is_none());
+    assert_eq!(client.post(endpoint).basic_auth("admin", Some(install_key))
+        .json(&json!({"password":"attempted replacement password"})).send().await.unwrap().status(), 409);
     assert_eq!(registry.count_object(ObjectType::Domain).await.unwrap(), count_before);
 
     let auth = |name: &str| AuthRequest::from_plain(name, password, 0, "127.0.0.1".parse().unwrap());

@@ -17,7 +17,7 @@ for backend in postgres foundationdb; do
   bash "$src/../install.sh" --from "$src" --dir "$dir" --hostname mail.example.test --image "$image" --no-start "${args[@]}" > "$work/output"
   grep -qx "SHIPPIN_STORAGE=$backend" "$dir/server.env"
   grep -qx "COMPOSE_PROFILES=bundled,$backend" "$dir/server.env"
-  [[ -f "$dir/backend.sh" ]]
+  [[ -f "$dir/backend.sh" && -f "$dir/claim.sh" ]]
   grep -qx 'MANAGESIEVE_HOST_PORT=4190' "$dir/server.env"
   grep -Fq '${MAIL_BIND:-127.0.0.1}:${MANAGESIEVE_HOST_PORT:-4190}:4190' "$dir/compose.yaml"
   grep -Fq 'node-logs:/var/log/shippin.tech' "$dir/compose.yaml"
@@ -47,3 +47,20 @@ if bash "$src/../install.sh" --from "$src" --dir "$work/postgres" --hostname mai
 fi
 [[ "$(cat "$work/postgres/server.env")" == "$before" ]]
 echo 'Installer refusal and secret handling checks passed'
+
+# A normal installation must actually invoke claim after startup, not just print instructions.
+mkdir "$work/source"
+cp "$src/"* "$work/source/" 2>/dev/null || true
+printf '#!/usr/bin/env bash\necho started > started\n' > "$work/source/update.sh"
+cat > "$work/source/claim.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+[[ -f started && "$1" == --password-stdin ]]
+IFS= read -r password
+[[ "$password" == 'Synthetic install stdin fixture' ]]
+touch claimed
+EOF
+printf '%s\n' 'Synthetic install stdin fixture' | bash "$src/../install.sh" --from "$work/source" --dir "$work/started" --hostname mail.example.test --image "$image" --admin-password-stdin --no-systemd > "$work/started-output"
+[[ -f "$work/started/claimed" ]]
+! grep -q 'Synthetic install stdin fixture' "$work/started-output"
+echo 'ok installation starts services then claims with password on stdin'

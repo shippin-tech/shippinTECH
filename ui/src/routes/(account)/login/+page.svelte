@@ -1,5 +1,4 @@
 <script lang="ts">
-	import KeyNotice from '$lib/shippin/keys/KeyNotice.svelte';
 	import { emailDomain } from '$lib/shippin/org/brand-call';
 	import { beginSso, ssoOffered } from '$lib/shippin/org/sso';
 	import { onMount } from 'svelte';
@@ -46,7 +45,7 @@
 	let closed = $state(false);
 
 	let signupOpen = $state(false);
-	// A new server with no administrator yet: say where its setup key goes.
+	// Ownership is completed locally by the installer before ordinary sign-in.
 	let setupOpen = $state(false);
 
 	onMount(() => {
@@ -224,10 +223,10 @@
 />
 
 {#if setupOpen && !device}
-	<KeyNotice variant="setup" />
+	<p class="closed" role="status">This server has not been claimed. Finish installation on the server, or run <code>bash claim.sh</code> in its instance directory to choose your administrator password.</p>
 {/if}
 {#if params.get('admin') === '1'}
-	<p class="closed" role="status">Your administrator was created and the setup key no longer works. Sign in with your new address.</p>
+	<p class="closed" role="status">Your administrator was created. Sign in with the password you chose.</p>
 {/if}
 {#if params.get('closed') === '1'}
 	<p class="closed" role="status">Your domain was closed and its mail deleted.</p>

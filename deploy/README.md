@@ -74,6 +74,7 @@ bash install.sh --from ./deploy --hostname mail.example.com \
 cd /srv/shippin-tech/mail
 bash update.sh --check
 bash update.sh ghcr.io/shippin-tech/shippintech-scale:sha-<full-candidate-commit>
+bash claim.sh
 sudo bash verify-install.sh
 ```
 
@@ -83,31 +84,27 @@ move it onto a build of this tree, is [PRODUCTION.md](PRODUCTION.md).
 
 ### First sign-in
 
-A new server has no administrator. It prints a one-time setup key, which
-`update.sh` and `install.sh` repeat at the end of their output:
+The installer asks you to choose and repeat the password for `root@system.local`.
+When it finishes, open `https://mail.example.com/login` and sign in with that
+account and password. There is no setup key to copy and no second administrator
+creation step in the browser.
 
-```
-username: admin
-key:      <24 characters>
-```
+If installation was interrupted or you used `--no-start`, start the instance
+with `bash update.sh <candidate image>`, then run `bash claim.sh` in its directory.
+It prompts without echoing your password. An already claimed instance is left
+unchanged. Automation can supply one password line on standard input using
+`install.sh --admin-password-stdin` or `claim.sh --password-stdin`; never put the
+password in command arguments.
 
-Open `https://mail.example.com/login`, enter `admin`, then the key. The only
-page you can reach is **Create your administrator**: set the password for
-`root@system.local`. From then on you sign in with that account, and the key no
-longer works. It also stops working 24 hours after it was made
-(`SETUP_KEY_HOURS` in `server.env` changes that); restart the server then and a
-new key is printed. Until then the key stays the same across restarts; it is
-kept in `/var/lib/shippin.tech/setup-key` inside the data volume, readable by
-root only:
+The installer uses an internal, root-readable credential through container
+loopback. It is not printed or accepted at normal sign-in. Ownership is recorded
+in the database and remains closed across restarts, key expiry and account deletion.
+If an unfinished installation's internal credential expires after 24 hours
+(`SETUP_KEY_HOURS`), restart the mail container and retry `bash claim.sh`.
 
-```sh
-cd /srv/shippin-tech/mail
-docker compose --env-file server.env exec mail cat /var/lib/shippin.tech/setup-key
-```
-
-`RECOVERY_ADMIN=admin:<long password>` in `server.env` is an optional
-break-glass login. When it is set, no setup key is printed and `admin` signs
-in with that password instead. It is not needed for normal operation.
+`RECOVERY_ADMIN=admin:<long password>` in `server.env` remains an optional
+break-glass login. It does not replace or prevent claiming the permanent root
+account and is not needed for normal operation.
 
 Fresh database setup reserves `system.local` and uses its ID as `defaultDomainId`.
 This identity domain has no automatic DNS, DKIM or certificate provisioning and
@@ -246,8 +243,8 @@ sudo bash verify-install.sh
 
 Your existing server keeps using FoundationDB, S3 and NATS as before; leave
 `COMPOSE_PROFILES` unset, because those services are your own. Sign in with the
-administrator you already have. If you never created one, the server prints a
-setup key on this first start of the new version, as for a new install. Once the
+administrator you already have. If you never created one, run `bash claim.sh`
+to choose the permanent root password, as for a new install. Once the
 check passes, `sudo bash auto-update.sh install` keeps the host on the release
 channel.
 

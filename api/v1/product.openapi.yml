@@ -102,14 +102,14 @@ paths:
   /api/v1/setup/admin:
     post:
       operationId: setupAdmin
-      summary: Turn the printed setup key into the first administrator
+      summary: Claim the permanent administrator through the local installer
       tags:
       - Setup
       description: Creates root@system.local in the reserved bootstrap identity domain and
         retires the setup key for good. Does not create a hosted mail domain. The administrator
         uses WebAdmin/API access; mail-protocol use is disabled. Fails with 409 `done` once setup is complete.
-      x-auth: Signed in as the setup account (`admin` with the one-time setup key). Any other account
-        gets 403 notSetup.
+      x-auth: Internal installer credential only (Basic admin and the root-readable local token).
+        It cannot authenticate ordinary API or mail requests. Other credentials get 403 notSetup.
       requestBody:
         required: true
         content:

@@ -18,6 +18,21 @@ where required by ROADMAP A6. This update does not mark any open row Done or Wai
 
 Branches, checked 2026-11-10: `shippin-tech/shippin-tech` and `shippin-tech/landing` each have one branch, `main`, fully pushed. A fresh clone fetches the landing submodule at the recorded commit.
 
+## Installer owner claim update ? 2026-11-22
+
+The installer now asks for the permanent `root@system.local` password and uses
+internal local authority to create it. Normal `/login` uses that password;
+unfinished installs resume with `bash claim.sh`. No setup key is printed or
+accepted as general login. Durable ownership prevents reclaim after restart,
+key expiry or account deletion; optional recovery remains independent.
+
+Local web qualification passes (289 unit tests, 13 browser tests, all applicable
+web/deploy checks). The packaged PostgreSQL install/sign-in/restart check is now
+part of **Test container build** and must pass before this candidate is presented
+as tested. This bounded change does not close full mail, recovery, scaling or
+source-separation qualification. Product version and automatic release channel
+remain unchanged; open rows below are not waived.
+
 ## Current candidate evidence boundary ? 2026-11-22
 
 Candidate `19c4409` passed Check and the candidate container build. PostgreSQL/SQLite

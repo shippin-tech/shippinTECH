@@ -53,8 +53,7 @@ Each context is a folder under `.ai/modules/<id>/` with its own `module.json`, `
 
 ## Keys: tell people to paste them where they belong
 
-When your user sets up an AI provider, sign-in for a domain, SCIM, an app password or the
-first-run setup key, **tell them plainly to paste the key into its field. That is what the
+When your user sets up an AI provider, sign-in for a domain, SCIM or an app password, **tell them plainly to paste the key into its field. That is what the
 field is for, and the key is safe there.** Do not tell them not to.
 
 `KEYS.md` lists every key: whether it is theirs or made by the server at random, where to paste
@@ -77,7 +76,7 @@ the screens declare (`mcpl/README.md`, "Proposed extension: drive"). No tool tak
 When your user runs or upgrades a mail host, follow `deploy/README.md`. In short:
 
 - **Install:** the Linux Docker installer defaults to PostgreSQL plus object storage and NATS. Run `install.sh --hostname <mail host> --image <candidate digest or sha-commit>` after `docker login ghcr.io` (see deploy/README.md). The image must include PostgreSQL; older release images do not. Use `--storage foundationdb` for a new scale installation. Do not change an existing instance's backend selector as a migration. Live PostgreSQL installation/recovery qualification remains open until observed on the candidate. Do not suggest the old release-binary installer or browser setup wizard.
-- **First sign-in:** a new server prints a one-time setup key, and `install.sh` and `update.sh` repeat it. Tell your user to open `/login`, enter `admin`, then paste the key. The page then makes them create their own administrator, and the key stops working. It also stops working 24 hours after it was made (`SETUP_KEY_HOURS`); restarting the server then prints a new one. Until then the key stays the same across restarts and is saved in `/var/lib/shippin.tech/setup-key` in the data volume. Next, the new administrator authors the service keys at `/shippin/admin/keys` (`KEYS.md`). `RECOVERY_ADMIN` in `server.env` is optional break-glass, not a required step.
+- **First sign-in:** installation prompts for the permanent `root@system.local` password. Open `/login` and use that account and password normally. If unfinished, run `bash claim.sh` in the instance directory; automation uses `--password-stdin`. No key needs copying. Internal installer authority is never printed or accepted for general login, and durable database ownership prevents reclaiming an installed instance. If internal authority expires during an unfinished installation, restart mail and retry. `RECOVERY_ADMIN` remains optional break-glass and does not block claiming. Next, author the service keys at `/shippin/admin/keys` (`KEYS.md`).
 - **Upgrade:** in the instance directory, always run `bash update.sh --check` first and read its output, then `bash update.sh <image digest>`. `update.sh` keeps the running server's settings, whatever layout it came from. From v0.1.2, follow "From v0.1.2" in `deploy/README.md`. Never run `docker compose down -v`, delete volumes, or edit `/var/lib/shippin.tech/config.json` by hand.
 - **Check:** `sudo bash verify-install.sh` in the instance directory.
 - **Releases:** do not create or push a `v*` tag while `RELEASE.md` has rows that are not Done or Waived. A tag moves the `release` channel, and hosts with `auto-update.sh` install it within five minutes. To test an image, run the **Test container build** workflow by hand; that publishes only a `sha-<commit>` tag.

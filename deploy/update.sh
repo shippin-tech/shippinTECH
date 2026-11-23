@@ -93,7 +93,7 @@ if $check_only; then
   if [[ -n "$(env_value RECOVERY_ADMIN)" ]]; then
     echo "admin login:    RECOVERY_ADMIN is set (break-glass)"
   else
-    echo "admin login:    your administrator account; a new server prints a one-time setup key instead"
+    echo "admin login:    your administrator account; use bash claim.sh if this server is unclaimed"
   fi
   exit 0
 fi
@@ -148,11 +148,7 @@ printf '%s\n' "$backend" > .storage-backend
 printf '%s %s\n' "$(date -u +%FT%TZ)" "$SHIPPIN_IMAGE" >> deployments.log
 echo "Healthy: $SHIPPIN_IMAGE"
 
-key=$("${compose[@]}" exec -T mail cat /var/lib/shippin.tech/setup-key 2>/dev/null | tr -d '[:space:]' || true)
-if [[ -n "$key" ]]; then
-  echo
-  echo "This server has no administrator yet. Open https://$(env_value MAIL_HOSTNAME)/login and sign in as:"
-  echo "  username: admin"
-  echo "  key:      $key"
-  echo "You will create your own administrator; the key then stops working."
+# Never print internal claim authority. Ownership is completed by install.sh/claim.sh.
+if "${compose[@]}" exec -T mail test -s /var/lib/shippin.tech/setup-key 2>/dev/null; then
+  echo 'Finish ownership: bash claim.sh (choose the permanent administrator password).'
 fi

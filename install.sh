@@ -5,8 +5,8 @@
 #     | sudo bash -s -- --hostname mail.example.com
 #
 # The node runs with its own PostgreSQL, object storage and NATS (all persistent,
-# all on this host). When it starts it prints a one-time setup key: sign in at
-# https://<hostname>/login as "admin" with that key and create your administrator.
+# all on this host). Installation asks you to choose the permanent root password.
+# Then sign in at https://<hostname>/login as root@system.local.
 #
 # Options:
 #   --hostname NAME    the mail host name, e.g. mail.example.com (required)
@@ -15,16 +15,19 @@
 #   --image IMAGE      exact candidate image (required for PostgreSQL)
 #   --storage BACKEND  postgres (default) or foundationdb (scale installation)
 #   --from DIR         copy the deploy files from a local checkout's deploy/ instead
+#   --admin-password-stdin  read the permanent administrator password from stdin
 #   --no-start         write the files and stop, so you can review server.env first
 #   --auto-update      also install the timer that follows the release channel
 #   --no-systemd       do not install the boot unit
 #   --no-backup        do not install the nightly backup timer
+set +x
 set -euo pipefail
 
 REPO=https://raw.githubusercontent.com/shippin-tech/shippinTECH
 IMAGE_BASE=ghcr.io/shippin-tech/shippintech-scale
 ref=main dir=/srv/shippin-tech/mail host='' image='' from='' start=true auto=false systemd=true backup=true
 backend=postgres
+claim_stdin=false
 
 die() { echo "install: $*" >&2; exit 1; }
 while [[ $# -gt 0 ]]; do
@@ -35,6 +38,7 @@ while [[ $# -gt 0 ]]; do
     --image) image=${2:-}; shift 2 ;;
     --storage) backend=${2:-}; shift 2 ;;
     --from) from=${2:-}; shift 2 ;;
+    --admin-password-stdin) claim_stdin=true; shift ;;
     --no-start) start=false; shift ;;
     --auto-update) auto=true; shift ;;
     --no-systemd) systemd=false; shift ;;
@@ -64,7 +68,7 @@ if [[ -n "$from" ]]; then
 fi
 mkdir -p "$dir"
 cd "$dir"
-files=(compose.yaml backend.sh update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py config.json config.postgres.json server.env.example relay.env.example README.md PRODUCTION.md)
+files=(compose.yaml backend.sh claim.sh update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py config.json config.postgres.json server.env.example relay.env.example README.md PRODUCTION.md)
 for f in "${files[@]}"; do
   if [[ -n "$from" ]]; then
     cp -- "$from/$f" "$f"
@@ -73,7 +77,7 @@ for f in "${files[@]}"; do
   fi
 done
 if [[ "$backend" == postgres ]]; then cp config.postgres.json config.json; fi
-chmod +x update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py
+chmod +x claim.sh update.sh auto-update.sh verify-install.sh backup.sh host.sh relay.sh relay.py
 
 if [[ -z "$image" ]]; then
   docker pull -q "$IMAGE_BASE:release" >/dev/null \
@@ -92,10 +96,9 @@ COMPOSE_PROFILES=bundled,$backend
 SHIPPIN_STORAGE=$backend
 SHIPPIN_IMAGE=$image
 MAIL_HOSTNAME=$host
-# Optional break-glass administrator (admin:<long password>). Leave empty to use the
-# one-time setup key the server prints on its first start.
+# Optional break-glass administrator, separate from the owner created at install.
 RECOVERY_ADMIN=
-# Hours the one-time setup key works for, counted from when it was made.
+# Hours internal installer authority lasts before an unfinished claim needs a restart.
 SETUP_KEY_HOURS=24
 # Bundled object storage and NATS on this host.
 S3_ENDPOINT=http://minio:9000
@@ -131,11 +134,12 @@ mkdir -p secrets/relay
 chmod 755 secrets/relay
 
 if ! $start; then
-  echo "Files written to $dir. Review server.env, then run: cd $dir && bash update.sh $image"
+  echo "Files written to $dir. Review server.env, then run: cd $dir && bash update.sh $image && bash claim.sh"
   exit 0
 fi
 
 bash update.sh "$image"
+if $claim_stdin; then bash claim.sh --password-stdin; else bash claim.sh; fi
 if $systemd && command -v systemctl >/dev/null && [[ -d /run/systemd/system ]]; then
   if $backup; then
     bash host.sh install

@@ -1,20 +1,9 @@
-//! First-run install key (a bootstrap token, in Kubernetes' words).
-//!
-//! A new server has no administrator. Unless RECOVERY_ADMIN is set, it keeps a
-//! one-time key next to its settings file (in the data volume), prints it, and
-//! accepts it for the user "admin". Its one job is to let that person create the
-//! real administrator, after which the key is deleted and stops working.
-//!
-//! It is ephemeral (OWASP ASVS 5.0, 6.4.1): it also stops working once it is older
-//! than `shippin.tech_SETUP_KEY_HOURS` (24 by default), counted from when it was made.
-//! Restarting the server after that makes a new one, so only someone who can restart
-//! the server can get in. Until then the same key is reused across restarts.
-
+//! Internal installer authority. Never printed or accepted for ordinary sign-in.
 use registry::{
     schema::{
         enums::AccountType,
         prelude::{ObjectType, Property},
-        structs::{Account, UserRoles},
+        structs::{Account, UserAccount, UserRoles},
     },
     types::EnumImpl,
 };
@@ -25,27 +14,37 @@ use store::{
 };
 use types::id::Id;
 
-/// Whether any user account holds an administrator role.
-pub async fn has_admin_account(registry: &RegistryStore, admin_role_ids: &[Id]) -> trc::Result<bool> {
+/// Whether a system administrator exists; tenant administrators do not own the host.
+pub async fn has_admin_account(
+    registry: &RegistryStore,
+    admin_role_ids: &[Id],
+) -> trc::Result<bool> {
     let ids = registry
         .query::<Vec<Id>>(
-            RegistryQuery::new(ObjectType::Account).equal(Property::Type, AccountType::User.to_id()),
+            RegistryQuery::new(ObjectType::Account)
+                .equal(Property::Type, AccountType::User.to_id()),
         )
         .await?;
     for id in ids {
-        if let Some(Account::User(user)) = registry.object::<Account>(id).await? {
-            match &user.roles {
-                UserRoles::Admin => return Ok(true),
-                UserRoles::Custom(custom)
-                    if custom.role_ids.iter().any(|role| admin_role_ids.contains(role)) =>
-                {
-                    return Ok(true);
-                }
-                _ => {}
-            }
+        if let Some(Account::User(user)) = registry.object::<Account>(id).await?
+            && holds_system_admin_role(&user, admin_role_ids)
+        {
+            return Ok(true);
         }
     }
     Ok(false)
+}
+
+fn holds_system_admin_role(user: &UserAccount, admin_role_ids: &[Id]) -> bool {
+    user.member_tenant_id.is_none()
+        && match &user.roles {
+            UserRoles::Admin => true,
+            UserRoles::Custom(custom) => custom
+                .role_ids
+                .iter()
+                .any(|role| admin_role_ids.contains(role)),
+            _ => false,
+        }
 }
 
 /// Turns the first-run key off and removes it from disk.
@@ -54,8 +53,51 @@ pub fn retire_setup_key(registry: &RegistryStore) {
     let _ = std::fs::remove_file(registry.setup_key_path());
 }
 
+fn claim_marker() -> store::ValueKey<store::write::ValueClass> {
+    store::ValueKey::from(store::write::ValueClass::InMemory(
+        store::write::InMemoryClass::Key(b"\xffshippintech.owner-claimed.v1".to_vec()),
+    ))
+}
+
+/// Durable ownership is independent of a local token's expiry or recovery login.
+pub async fn owner_claimed(registry: &RegistryStore, admin_role_ids: &[Id]) -> trc::Result<bool> {
+    if registry
+        .store()
+        .get_value::<u64>(claim_marker())
+        .await?
+        .is_some()
+    {
+        return Ok(true);
+    }
+    if has_admin_account(registry, admin_role_ids).await? {
+        mark_owner_claimed(registry).await?;
+        return Ok(true);
+    }
+    Ok(false)
+}
+
+pub async fn mark_owner_claimed(registry: &RegistryStore) -> trc::Result<()> {
+    use store::write::{BatchBuilder, Operation, ValueOp};
+    let mut batch = BatchBuilder::new();
+    // The in-memory subspace's first eight bytes are expiry: never expire this marker.
+    batch.any_op(Operation::Value {
+        class: claim_marker().class,
+        op: ValueOp::Set(u64::MAX.to_be_bytes().to_vec()),
+    });
+    registry.store().write(batch.build_all()).await.map(|_| ())
+}
+
 fn write_private(path: &std::path::Path, key: &str) -> std::io::Result<()> {
-    std::fs::write(path, format!("{key}\n"))?;
+    use std::io::Write;
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(path)?;
+    file.write_all(format!("{key}\n").as_bytes())?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -98,10 +140,10 @@ fn made_at(path: &std::path::Path) -> Option<u64> {
 
 /// Called once at startup on a configured server.
 pub async fn prepare_setup_key(registry: &RegistryStore, admin_role_ids: &[Id]) {
-    if registry.is_bootstrap_mode() || registry.has_env_recovery_admin() {
+    if registry.is_bootstrap_mode() {
         return;
     }
-    match has_admin_account(registry, admin_role_ids).await {
+    match owner_claimed(registry, admin_role_ids).await {
         Ok(true) => {
             retire_setup_key(registry);
             return;
@@ -113,7 +155,11 @@ pub async fn prepare_setup_key(registry: &RegistryStore, admin_role_ids: &[Id]) 
         }
     }
     let path = registry.setup_key_path();
-    let lifetime = lifetime(std::env::var("shippin.tech_SETUP_KEY_HOURS").ok().as_deref());
+    let lifetime = lifetime(
+        std::env::var("shippin.tech_SETUP_KEY_HOURS")
+            .ok()
+            .as_deref(),
+    );
     let now = unix_now();
     let saved = std::fs::read_to_string(&path)
         .ok()
@@ -130,32 +176,35 @@ pub async fn prepare_setup_key(registry: &RegistryStore, admin_role_ids: &[Id]) 
                 .map(char::from)
                 .collect::<String>();
             if let Err(err) = write_private(&path, &key) {
-                eprintln!("Could not save the setup key to {}: {err}", path.display());
+                eprintln!(
+                    "Could not save internal install authority to {}: {err}",
+                    path.display()
+                );
+                return;
             }
             (key, now)
         }
     };
     let until = made.saturating_add(lifetime);
     registry.set_setup_key(Some((key.clone(), until)));
-    eprintln!();
-    eprintln!("════════════════════════════════════════════════════════════");
-    eprintln!("🔑 shippin.tech first-run setup key");
-    eprintln!();
-    eprintln!("   Open /login on this server and sign in as:");
-    eprintln!("     username: admin");
-    eprintln!("     key:      {key}");
-    eprintln!();
-    eprintln!("   You will be asked to create your own administrator.");
-    eprintln!("   After that this key stops working. It also stops working");
-    eprintln!("   {} hours after it was made; restart the server then for a", lifetime / 3600);
-    eprintln!("   new one. It is saved in {}.", path.display());
-    eprintln!("════════════════════════════════════════════════════════════");
-    eprintln!();
+    eprintln!(
+        "ShippinTECH is unclaimed. Complete installation or run bash claim.sh in the instance directory."
+    );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tenant_administrator_does_not_claim_host_ownership() {
+        let mut user = UserAccount::default();
+        assert!(!holds_system_admin_role(&user, &[]));
+        user.roles = UserRoles::Admin;
+        assert!(holds_system_admin_role(&user, &[]));
+        user.member_tenant_id = Some(Id::from(1u32));
+        assert!(!holds_system_admin_role(&user, &[]));
+    }
 
     #[test]
     fn an_install_key_lasts_24_hours_unless_told_otherwise() {
