@@ -138,7 +138,9 @@ if ! $start; then
   exit 0
 fi
 
-bash update.sh "$image"
+# Docker may attach stdin while creating containers. Preserve unattended password
+# input exclusively for claim.sh, regardless of how the startup command behaves.
+bash update.sh "$image" </dev/null
 if $claim_stdin; then bash claim.sh --password-stdin; else bash claim.sh; fi
 if $systemd && command -v systemctl >/dev/null && [[ -d /run/systemd/system ]]; then
   if $backup; then

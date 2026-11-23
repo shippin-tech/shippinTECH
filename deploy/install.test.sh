@@ -51,7 +51,7 @@ echo 'Installer refusal and secret handling checks passed'
 # A normal installation must actually invoke claim after startup, not just print instructions.
 mkdir "$work/source"
 cp "$src/"* "$work/source/" 2>/dev/null || true
-printf '#!/usr/bin/env bash\necho started > started\n' > "$work/source/update.sh"
+printf '#!/usr/bin/env bash\ncat >/dev/null\necho started > started\n' > "$work/source/update.sh"
 cat > "$work/source/claim.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
