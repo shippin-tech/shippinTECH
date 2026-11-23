@@ -50,18 +50,22 @@ The executable cards are [roadmap/execution.csv](roadmap/execution.csv); every
 historical review is assigned in [current-review.csv](roadmap/reconciliation/current-review.csv).
 The evidence snapshot is [current-audit.json](roadmap/reconciliation/current-audit.json).
 
+The history counts below remain the audit-anchor snapshot. The owner explicitly
+authorized the bounded D0 correction before H0 behavior reconciliation is complete;
+D0 is now verified as stated below. This does not close H0 or source independence.
+
 | Item | Verified observation / remaining work |
 | --- | --- |
 | Git | Main is pushed and clean at the audit anchor; one worktree, no active stash. The retained remote branch has 0 unique commits and is 14 behind main. No branch merge is missing. |
 | All available history | Existing 53 historical sources plus current main cover all 257 stored commits; zero uncovered commits. The 32 checkpoint refs and both dropped stashes remain accounted for. Nothing was pruned or blanket-applied. |
 | Absorption | All 3,193 historical review units now have current blob comparison and a specific execution-card assignment. Only 37 have an exact blob elsewhere/currently. All behavioral dispositions remain open; assigning a task is not reviewing its behavior or proving authorship. |
 | Committed work | `7553600` People/API consumer; `e952af3` PostgreSQL-first installer/recovery plumbing; `1b39550` installation defects; `19c4409` reserved identity domain/root separation. These are already in main; do not recreate or recommit them as pending work. |
-| CI / image | [Check](https://github.com/shippin-tech/shippinTECH/actions/runs/45045930859) and [candidate build](https://github.com/shippin-tech/shippinTECH/actions/runs/45059518055) passed for the anchor. Candidate `ghcr.io/shippin-tech/shippintech-scale:sha-19c4409e97a89ab1c40716dab49ed9ee59d5dd32`, Linux amd64; no release change. |
-| Bounded tests | 164 common + 36 HTTP unit tests, 289 UI units, 13 mocked browser tests, full available web/deploy checks including Linux relay; 3 authentication/bootstrap/lifecycle tests each on PostgreSQL and SQLite. These are not whole-product or packaged multi-tenant proofs. |
+| CI / image | The historical audit anchor passed its checks. Current owner-claim candidate `6d34ed16254d61388d7ba9a2c4cf4c4638be64ea` passed [container build and packaged claim](https://github.com/shippin-tech/shippinTECH/actions/runs/45092950006); Linux amd64, PostgreSQL. Product version and automatic release channel unchanged. |
+| Bounded tests | Current claim correction: 165 common + 36 HTTP + 1 HTTP-proto units, 289 UI units, 13 mocked browser tests, web/deploy checks including Linux relay and hidden interactive claim; 3 authentication/bootstrap/lifecycle tests each on PostgreSQL and SQLite; one packaged PostgreSQL browser test. These are not whole-product or packaged multi-tenant proofs. |
 | Test-profile limitation | `enterprise/config.rs` supplies a synthetic license under `test_mode`; normal builds without a key return None. `common/config/mod.rs` then clears directories and downgrades some composite storage/telemetry. Packaged no-license tests are mandatory for D1/D2/D3/D9. |
 | Svelte | Existing UI is the base. Its 57-entry source inventory records 3 representative proofs, 29 partial, 4 runtime-replaced, 17 retained assets and 4 pending; this is not full workflow parity. Keep the existing styles/screens. |
 | API | People and other admin consumers use `/api/v1`, but `registry_rest.rs` and setup helpers still dispatch private JMAP methods internally. D10 is an application-operation/schema cut, not another URL rename. |
-| Installation claim | System identity is implemented; installer-to-owner claim is not. Installation still prints a temporary key, requires login, creates root, and asks for login again. D0 defines the minimal replacement. |
+| Installation claim | D0 implemented in `03db73d`, `2113e34`, `6d34ed1`: install chooses root password; no manual key login; durable ownership and independent recovery. [Packaged PostgreSQL proof](https://github.com/shippin-tech/shippinTECH/actions/runs/45092950006) passed fresh install, normal API/browser login, restart and repeat claim. Remaining source/feature qualifications stay open. |
 | Source separation | Existing own modules, unresolved application origins, an AGPL Sieve dependency and the upstream spam-rule feed are distinct boundaries. No changed-line percentage or renamed EE symbol proves license independence. |
 
 ## 2a. Authored execution contract

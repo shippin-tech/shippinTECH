@@ -162,6 +162,14 @@
     {
       "kind": "code",
       "ref": "deploy/claim.live.test.sh"
+    },
+    {
+      "kind": "code",
+      "ref": "ROADMAP.md"
+    },
+    {
+      "kind": "code",
+      "ref": "roadmap/execution.csv"
     }
   ],
   "concerns": [
@@ -192,22 +200,22 @@
       "command": "Run common/http/http-proto tests and PostgreSQL/SQLite system::authentication integration",
       "proves": "Authorization, credential policy, single claim and durable closure",
       "expected": "Pass including refusal and recovery-override cases",
-      "result": "PostgreSQL and SQLite: 3 authentication/identity tests passed each after the concurrent-claim conflict fix. Final rerun and full common/http/http-proto unit suites are running after adding tenant-admin exclusion from system ownership."
+      "result": "Final Linux rerun passed: 3 authentication/identity integration tests each on PostgreSQL and SQLite; 165 common, 36 HTTP and 1 HTTP-proto unit tests. Includes expired/internal/recovery credentials, concurrent claims, retry/refusal, tenant-admin exclusion and durable ownership after reopening a database with no administrators. GitHub Check for implementation 03db73d passed: https://github.com/shippin-tech/shippinTECH/actions/runs/45091192153."
     },
     {
       "name": "Whole product/web/deploy gate",
       "command": "python scripts/regression.py --only web; claim shell suite; cargo check application postgres,s3,nats,enterprise",
       "proves": "Existing UI/deploy/contracts compile and installer handles claim safely",
       "expected": "All applicable checks pass with missing checks named",
-      "result": "Windows application check with postgres,s3,nats,enterprise passed. Full web runner: 19 passed, 0 failed; POSIX relay check deferred to Linux. Includes 289 unit tests and 13 browser tests. Linux claim helper including hidden interactive confirmation passed. Repository organization check passed."
+      "result": "Application check with postgres,s3,nats,enterprise passed. Full web runner: 19 passed, 0 failed, including 289 UI units and 13 browser tests. POSIX relay checks passed separately on Linux. Linux claim helper including hidden interactive confirmation passed. Installer stdin-drain regression passed for 2113e34. Repository organization check passed. Final candidate Check passed: https://github.com/shippin-tech/shippinTECH/actions/runs/45092949917."
     },
     {
       "name": "Packaged first install",
       "command": "Build immutable candidate; fresh PostgreSQL install/claim/sign-in/restart and repeat-claim checks",
       "proves": "Real binary/installer claim works without test-only entitlement",
       "expected": "Owner signs in normally, no printed bootstrap key, restart/reclaim checks pass",
-      "result": "Added packaged PostgreSQL installation, normal API/browser sign-in, repeat-claim and restart checks to Test container build. Not yet run on published candidate."
+      "result": "PASS on published candidate 6d34ed16254d61388d7ba9a2c4cf4c4638be64ea, image sha256:22c6fac97a643eb8cbc5f2c231aed8b05f2305bfad7916eb709f932ab7a9369f. Fresh packaged PostgreSQL + object storage + NATS install created root without printing password; normal root API sign-in succeeded; repeat claim left administrator unchanged; verify-install passed 6 checks across restart, internal key remained absent; live browser normal password sign-in and refused re-claim passed (1 test). No test_mode or synthetic entitlement in this image. Workflow: https://github.com/shippin-tech/shippinTECH/actions/runs/45092950006. First packaged attempt exposed stdin consumption by status exec; fixed and regression-tested before this pass. Published prerelease with installer, server bundle and checksums: https://github.com/shippin-tech/shippinTECH/releases/tag/baseline-6d34ed1. Product version and automatic release channel unchanged."
     }
   ],
-  "status": "approved"
+  "status": "implemented"
 }

@@ -20,23 +20,25 @@ Branches, checked 2026-11-10: `shippin-tech/shippin-tech` and `shippin-tech/land
 
 ## Installer owner claim update ? 2026-11-22
 
+Published [baseline pre-release](https://github.com/shippin-tech/shippinTECH/releases/tag/baseline-6d34ed1) with pinned image digest, installer, server bundle and checksums.
+
 The installer now asks for the permanent `root@system.local` password and uses
 internal local authority to create it. Normal `/login` uses that password;
 unfinished installs resume with `bash claim.sh`. No setup key is printed or
 accepted as general login. Durable ownership prevents reclaim after restart,
 key expiry or account deletion; optional recovery remains independent.
 
-Local web qualification passes (289 unit tests, 13 browser tests, all applicable
-web/deploy checks). The packaged PostgreSQL install/sign-in/restart check is now
-part of **Test container build** and must pass before this candidate is presented
-as tested. This bounded change does not close full mail, recovery, scaling or
+Candidate `6d34ed16254d61388d7ba9a2c4cf4c4638be64ea` passed [Test container build](https://github.com/shippin-tech/shippinTECH/actions/runs/45092950006), including a fresh packaged PostgreSQL install,
+normal API/browser sign-in, repeat claim and restart (six install checks). Local
+qualification passed 202 Rust units, three integration tests on each of PostgreSQL
+and SQLite, 289 UI units, 13 mocked browser tests and the deployment checks. This bounded change does not close full mail, recovery, scaling or
 source-separation qualification. Product version and automatic release channel
 remain unchanged; open rows below are not waived.
 
 ## Current candidate evidence boundary ? 2026-11-22
 
-Candidate `19c4409` passed Check and the candidate container build. PostgreSQL/SQLite
-bootstrap and identity lifecycle passed in the integration harness. Whole packaged
+Historical anchor `19c4409` passed Check and its container build. The current
+owner-claim candidate and its additional proof are recorded above. Whole packaged
 multi-tenant mail, directory parity, recovery, and independent-source closure have
 not been established by those checks. The harness can supply a synthetic Enterprise
 license; the shipped build does not. F0?F11 historical Done rows describe the dated
@@ -45,10 +47,11 @@ In particular org management is not all tenant-owned DKIM/directory/report behav
 OIDC-only is not LDAP parity; eq-only SCIM is not broader provisioning parity.
 
 ROADMAP section 2a and `roadmap/execution.csv` govern the remaining work. Owner claim
-at install (D0), runtime feature separation (D1?D9), direct application API/schema
+at install (D0) is implemented and verified for the packaged PostgreSQL candidate.
+Runtime feature separation (D1?D9), direct application API/schema
 (D10), filtering/source/external dependency closure (D11?D13), and packaged full
-qualification remain open. This update changes no release version/tag/channel and
-marks no item Done or Waived. The older order-of-work paragraph below is historical;
+qualification remain open. Product version and the automatic release channel remain
+unchanged. D0 is verified; no other open qualification is waived. The older order-of-work paragraph below is historical;
 use the current ROADMAP sequence.
 
 ## A. Blockers found by testing
@@ -59,8 +62,8 @@ use the current ROADMAP sequence.
 | A3 | **Webmail cannot send.** It lists folders and reads messages only. | Compose, reply, forward and send to an internal and an external address. Drafts and Sent fill correctly. An attachment survives a round trip. | Done: the browser suite sends, receives and replies, checks Sent and Drafts, and round-trips an attachment byte for byte. Delivery to an outside address is proven by B4 on the host |
 | A4 | **Owner password recovery.** An owner who forgets their password can only be helped by the operator. | Decision recorded here, then built: either a recovery address set at signup with an emailed reset link, or operator-assisted recovery documented for v1. | Needs Jesse's decision |
 | A5 | **DNS status in `/manage`.** Owners see which records to publish but not whether they are live. | Each required record (MX, SPF, DKIM, DMARC) shows found or missing from a live lookup. | Done for missing records; the published case needs a real domain (B1) |
-| A6 | **One admin model.** The deploy docs require a permanent `RECOVERY_ADMIN` and call the printed key a failure, `install.sh` relies on the printed key and the old wizard, and `/login` refuses `admin` because it has no `@`. Nothing makes the first key single-use. | A fresh server prints one setup key, kept across restarts. Signing in as `admin` with it forces creation of the real administrator, after which the key no longer works. `RECOVERY_ADMIN` is optional break-glass. `/login` accepts `admin`. | Done: on a fresh node built by `install.sh`, the browser test `e2e-live/first-run.spec.ts` signs in as `admin` with the key, is held on "Create your administrator", creates it, then the key is refused and the new administrator reaches the portal; the key was unchanged across a restart and deleted afterwards |
-| A7 | **One install path that sets up a whole host.** `install.sh` downloads from GitHub Releases, which has none, so it fails for everyone. `deploy/` expects you to bring FoundationDB, object storage and NATS yourself. | One command on a clean Linux host installs Docker services for the mail server, FoundationDB, object storage and NATS with persistent data, prints the setup key, and lists the ports, DNS records and certificate it needs. | Done on this workstation: `install.sh` wrote the instance, `update.sh` started the bundled FoundationDB, object storage and NATS and the mail server, and printed the key. Certificate issuance is A10. A Linux host run is B3 |
+| A6 | **Claim the owner during installation.** | Installer asks for the permanent root password; normal sign-in works; recovery is independent; no manual temporary-key journey or repeat ownership. | Done for candidate `6d34ed1`: [packaged PostgreSQL install/API/browser/restart proof](https://github.com/shippin-tech/shippinTECH/actions/runs/45092950006) passed; integration tests cover weak/expired credentials, concurrent/retried/refused claims and durable closure. |
+| A7 | **One install path that sets up a whole host.** | Linux Docker install starts PostgreSQL, object storage, NATS and the mail server, then claims root. FoundationDB remains an explicit scale option. | Done for the packaged PostgreSQL candidate on a disposable Linux runner: [install proof](https://github.com/shippin-tech/shippinTECH/actions/runs/45092950006). Previous FoundationDB evidence is historical; its new claim flow is unverified. Public-host TLS and host qualification remain A10/B3. |
 | A8 | **Upgrade from any earlier layout, including v0.1.2 on VM 164.** v0.1.3 moved the settings into the data volume; replacing a container whose settings live elsewhere loses them, which is how the admin key reset happened. | `update.sh` copies the running server's own settings into the data volume before replacing it, has a dry run that reports what it found, and the steps from v0.1.2 are written down. | Done: a v0.1.2 node on the real v0.1.2 image, with an administrator, a mailbox and a delivered message, was upgraded by the README steps; the dry run named its settings file, the upgrade copied it into the volume, and afterwards the administrator, the mailbox and the message were all there, also after a restart (`verify-install.sh`, 7 checks) |
 | A9 | **AI instructions.** `AGENTS.md` has no install or upgrade steps. | `AGENTS.md` gives the install, first sign-in and upgrade steps and points to `deploy/README.md`. | Done: `AGENTS.md` has install, first sign-in, upgrade and release rules |
 | A10 | **TLS certificate at install.** The installer leaves the certificate as a portal step, so mail apps warn until an operator sets up ACME by hand. | `install.sh` or first-run setup requests a Let's Encrypt certificate for the host name, verified on a public host. | Open |
