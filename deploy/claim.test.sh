@@ -14,7 +14,7 @@ cat > "$work/bin/docker" <<'EOF'
 set -euo pipefail
 printf '%s\n' "$*" >> "$CLAIM_TEST_STATE/argv"
 case "${*: -1}" in
-  --claim-admin-status) exit "$(cat "$CLAIM_TEST_STATE/status")" ;;
+  --claim-admin-status) cat >/dev/null; exit "$(cat "$CLAIM_TEST_STATE/status")" ;;
   --claim-admin)
     IFS= read -r password
     [[ "$password" == 'Synthetic installer password fixture' ]] || exit 1

@@ -10,7 +10,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 [[ -f server.env && -f compose.yaml ]] || { echo 'Run claim.sh in the instance directory.' >&2; exit 1; }
 compose=(docker compose --env-file server.env -f compose.yaml)
 status=0
-"${compose[@]}" exec -T mail /usr/local/bin/shippin.tech --claim-admin-status || status=$?
+"${compose[@]}" exec -T mail /usr/local/bin/shippin.tech --claim-admin-status </dev/null || status=$?
 case "$status" in
   0) ;;
   3) exit 0 ;;
